@@ -34,3 +34,8 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+
+# Ignore VRWorks Audio SDK files
+nvar.dll
+optix.1.dll
+
