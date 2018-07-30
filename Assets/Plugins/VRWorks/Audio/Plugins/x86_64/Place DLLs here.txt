@@ -1,0 +1,1 @@
+Place nvar.dll and optix.1.dll from the NVIDIA VRWorks SDK into this directory.
