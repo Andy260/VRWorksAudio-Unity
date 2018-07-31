@@ -1,0 +1,14 @@
+{
+    "name": "NVARTest",
+    "references": [
+        "VRWorks-Audio"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false
+}
