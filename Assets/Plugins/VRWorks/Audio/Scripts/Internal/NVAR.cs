@@ -11,7 +11,7 @@ namespace NVIDIA.VRWorksAudio.Internal
         /// <summary>
         /// Compute presets
         /// </summary>
-        public enum ComputePreset
+        internal enum ComputePreset
         {
             /// <summary>
             /// High compute
@@ -27,7 +27,7 @@ namespace NVIDIA.VRWorksAudio.Internal
         /// <summary>
         /// Effect strength presets
         /// </summary>
-        public enum EffectPreset
+        internal enum EffectPreset
         {
             /// <summary>
             /// Low effects strength
@@ -52,7 +52,7 @@ namespace NVIDIA.VRWorksAudio.Internal
         /// These formats describe the types of audio device playing 
         /// the audio output, for example, a pair of stereo headphones.
         /// </remarks>
-        public enum OutputFormat
+        internal enum OutputFormat
         {
             /// <summary>
             /// 2-channel format intended for headphones
@@ -68,7 +68,7 @@ namespace NVIDIA.VRWorksAudio.Internal
         /// use or to form the basis of materials which a user can modify after 
         /// creating.
         /// </remarks>
-        public enum PredefinedMaterial
+        internal enum PredefinedMaterial
         {
             /// <summary>
             /// Concrete
@@ -116,7 +116,7 @@ namespace NVIDIA.VRWorksAudio.Internal
         /// Refer to each individual error code for a
         /// detailed explanation.
         /// </summary>
-        public enum Status
+        internal enum Status
         {
             /// <summary>
             /// The API call returned with no errors.
@@ -125,7 +125,7 @@ namespace NVIDIA.VRWorksAudio.Internal
 
             /// <summary>
             /// The NVAR library has not been initialized
-            /// with ::nvarInitialize() or an attempt to initialize 
+            /// with <see cref="Initialize(int)"/> or an attempt to initialize 
             /// the library failed.
             /// </summary>
             NotInitialized = 1,
@@ -324,6 +324,94 @@ namespace NVIDIA.VRWorksAudio.Internal
         /// </returns>
         [DllImport("nvar", EntryPoint = "nvarGetPreferedDevice")]
         private static extern Status Internal_GetPreferedDevice(IntPtr a_DXGIAdapter, out int a_device);
+
+        /// <summary>
+        /// Gets the string description of a status code
+        /// </summary>
+        /// /// <remarks>
+        /// This function sets <see cref="a_str"/> to the address of a
+        /// NULL-terminated string containing a description of the 
+        /// status code enumeration status.
+        /// </remarks>
+        /// <param name="a_str">Returned address of the string pointer</param>
+        /// <param name="status">Status code of the description string</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_str"/> is NULL or <see cref="status"/> is an invalid value.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetStatusDescription")]
+        private static extern Status Internal_GetStatusDescription(out IntPtr a_str, Status a_status);
+
+        /// <summary>
+        /// Gets the string representation of a status code enum
+        /// </summary>
+        /// <remarks>
+        /// This function sets <see cref="a_str"/> to the address of a
+        /// NULL-terminated string representation of the name of the
+        /// status code enumeration status.
+        /// </remarks>
+        /// <param name="a_str">Returned address of the string pointer</param>
+        /// <param name="a_status">The status code of the enum string</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_str"/> is NULL or <see cref="a_status"/> is an invalid value.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetStatusString")]
+        private static extern Status Internal_GetStatusString(out IntPtr a_str, Status a_status);
+
+        #endregion
+
+        #region Error Handling
+
+        /// <summary>
+        /// Gets the string description of a status code
+        /// </summary>
+        /// <remarks>
+        /// This function sets <see cref="a_str"/> to the description of the 
+        /// status code enumeration status.
+        /// </remarks>
+        /// <param name="a_str">String description of the status code</param>
+        /// <param name="status">Status code of the description string</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_str"/> is NULL or <see cref="status"/> is an invalid value.</para>
+        /// </returns>
+        internal static Status GetStatusDescription(out string a_str, Status a_status)
+        {
+            // Get status description from NVAR
+            IntPtr stringPointer;
+            Status status = Internal_GetStatusDescription(out stringPointer, a_status);
+
+            // Convert unmanaged string to managed string object
+            a_str = Marshal.PtrToStringAnsi(stringPointer);
+
+            return status;
+        }
+
+        /// <summary>
+        /// Gets the string representation of a status code enum
+        /// </summary>
+        /// <remarks>
+        /// This function sets <see cref="a_str"/> to the string representation 
+        /// of the name of the status code enumeration status.
+        /// </remarks>
+        /// <param name="a_str">Returned string name of the status code</param>
+        /// <param name="a_status">The status code of the enum string</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_str"/> is NULL or <see cref="a_status"/> is an invalid value.</para>
+        /// </returns>
+        internal static Status GetStatusString(out string a_str, Status a_status)
+        {
+            // Get status name from NVAR
+            IntPtr stringPointer;
+            Status status = Internal_GetStatusString(out stringPointer, a_status);
+
+            // Convert unmanaged string to managed string object
+            a_str = Marshal.PtrToStringAnsi(stringPointer);
+
+            return status;
+        }
 
         #endregion
 

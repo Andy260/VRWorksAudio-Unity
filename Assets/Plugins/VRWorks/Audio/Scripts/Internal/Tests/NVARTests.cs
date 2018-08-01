@@ -4,6 +4,49 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
 {
     [TestFixture]
     [SingleThreaded]
+    public sealed class ErrorHandlingTests
+    {
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetStatusDescription() in the managed API")]
+        public void GetStatusDescription()
+        {
+            // Status enumeration to get the description string from NVAR
+            NVAR.Status testingStatus = NVAR.Status.Error;
+
+            // Get status enumeration string description from NVAR
+            string description;
+            NVAR.Status status = NVAR.GetStatusDescription(out description, testingStatus);
+
+            // Ensure call to NVAR succeeded
+            Assert.AreEqual(NVAR.Status.Success, status);
+
+            // Ensure returned value is as expected
+            Assert.AreEqual("The API returned an unspecified error.", description);
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetStatusString() in the managed API")]
+        public void GetStatusString()
+        {
+            // Status enumeration to get the string name representation from NVAR
+            NVAR.Status testingStatus = NVAR.Status.Error;
+
+            // Get status enumeration string name from NVAR
+            string name;
+            NVAR.Status status = NVAR.GetStatusString(out name, testingStatus);
+
+            // Ensure call to NVAR succeeded
+            Assert.AreEqual(NVAR.Status.Success, status);
+
+            // Ensure returned value is as expected
+            Assert.AreEqual("NVAR_STATUS_ERROR", name);
+        }
+    }
+
+    [TestFixture]
+    [SingleThreaded]
     public sealed class GeneralTests
     {
         [Test]
