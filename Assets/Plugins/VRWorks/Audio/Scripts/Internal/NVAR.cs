@@ -5,6 +5,9 @@ using UnityEngine;
 
 namespace NVIDIA.VRWorksAudio.Internal
 {
+    /// <summary>
+    /// Managed interface to NVAR
+    /// </summary>
     internal static class NVAR
     {
         #region Enumerations
@@ -283,6 +286,30 @@ namespace NVIDIA.VRWorksAudio.Internal
             #region Constructors
 
             internal Context(IntPtr a_nvarPointer)
+            {
+                pointer = a_nvarPointer;
+            }
+
+            #endregion
+        }
+
+        /// <summary>
+        /// An opaque handle to a user defined acoustic material.
+        /// </summary>
+        internal struct Material
+        {
+            #region Properties
+
+            /// <summary>
+            /// Internal pointer to NVAR acoustic material
+            /// </summary>
+            internal IntPtr pointer { get; set; }
+
+            #endregion
+
+            #region Constructors
+
+            internal Material(IntPtr a_nvarPointer)
             {
                 pointer = a_nvarPointer;
             }
@@ -917,6 +944,130 @@ namespace NVIDIA.VRWorksAudio.Internal
         /// </returns>
         [DllImport("nvar", EntryPoint = "nvarSetListenerOrientation")]
         private static extern Status Internal_SetListenerOrientation(IntPtr a_nvar, Float3 a_forward, Float3 a_up);
+
+        /// <summary>
+        /// Creates an acoustic material
+        /// </summary>
+        /// <remarks>
+        /// Creates an acoustic material with default properties.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_material">Returned material handle</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_material"/> is NULL.</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarCreateMaterial")]
+        private static extern Status Internal_CreateMaterial(IntPtr a_nvar, out IntPtr a_material);
+
+        /// <summary>
+        /// Creates a predefined acoustic material
+        /// </summary>
+        /// <remarks>
+        /// This function creates an acoustic material with predefined acoustic properties.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_material">Returned material object</param>
+        /// <param name="a_predefinedMaterial">Enumerated predefined material value</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, <see cref="a_material"/> is NULL, 
+        ///           or <see cref="a_predefinedMaterial"/> is not in the range (<see cref="PredefinedMaterial.Absorber"/>.</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarCreatePredefinedMaterial")]
+        private static extern Status Internal_CreatePredefinedMaterial(IntPtr a_nvar, out IntPtr a_material, PredefinedMaterial a_predefinedMaterial);
+
+        /// <summary>
+        /// Destroys the specified acoustic material
+        /// </summary>
+        /// <remarks>
+        /// Destroys the specified acoustic material. The material should not be currently attached to a mesh object.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material object.</para>
+        ///     <para><see cref="Status.NotReady"/>: The material is still attached to a mesh object.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarDestroyMaterial")]
+        private static extern Status Internal_DestroyMaterial(IntPtr a_material);
+
+        /// <summary>
+        /// Gets the reflection coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// This function gets the reflection coefficient of the acoustic material.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="a_reflection">Returned reflection coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_reflection"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetMaterialReflection")]
+        private static extern Status Internal_GetMaterialReflection(IntPtr a_material, out float a_reflection);
+
+        /// <summary>
+        /// Sets the reflection coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// This function sets the reflection coefficient of the acoustic
+        /// material.Physically, this value should be in the range 
+        /// [0, 1], and the reflection coefficient and transmission
+        /// coefficients should have a sum &lt;= 1.0. The API does not 
+        /// enforce this restriction
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="a_reflection">Reflection coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_reflection"/> is not in the range[0.0, 1.0].</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetMaterialReflection")]
+        private static extern Status Internal_SetMaterialReflection(IntPtr a_material, float a_reflection);
+
+        /// <summary>
+        /// Gets the transmission coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// Returns the transmission coefficient of the acoustic material.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="a_transmission">Returned transmission coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_transmission"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetMaterialTransmission")]
+        private static extern Status Internal_GetMaterialTransmission(IntPtr a_material, out float a_transmission);
+
+        /// <summary>
+        /// Sets the transmission coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// This function sets the transmission coefficient of the acoustic
+        /// material.Physically, this value should be in the range 
+        /// [0, 1], and the reflection coefficient and transmission
+        /// coefficients should have a sum &lt;= 1.0. The API does not 
+        /// enforce this restriction.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="transmission">Transmission coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_transmission"/> is not in the range[0.0, 1.0].</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetMaterialTransmission")]
+        internal static extern Status Internal_SetMaterialTransmission(IntPtr a_material, float a_transmission);
 
         #endregion
 
@@ -1746,6 +1897,159 @@ namespace NVIDIA.VRWorksAudio.Internal
         internal static Status TraceAudio(Context a_nvar, IntPtr a_traceDoneEvent)
         {
             return Internal_TraceAudio(a_nvar.pointer, a_traceDoneEvent);
+        }
+
+        #endregion
+
+        #region Acoustic Material Functions
+
+        /// <summary>
+        /// Creates an acoustic material
+        /// </summary>
+        /// <remarks>
+        /// Creates an acoustic material with default properties.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_material">Returned material handle</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_material"/> is NULL.</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        /// </returns>
+        internal static Status CreateMaterial(Context a_nvar, out Material a_material)
+        {
+            // Create NVAR acoustic material
+            IntPtr materialPointer;
+            Status status = Internal_CreateMaterial(a_nvar.pointer, out materialPointer);
+
+            // Create wrapper object for acoustic material
+            a_material = new Material(materialPointer);
+
+            return status;
+        }
+
+        /// <summary>
+        /// Destroys the specified acoustic material
+        /// </summary>
+        /// <remarks>
+        /// Destroys the specified acoustic material. The material should not be currently attached to a mesh object.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material object.</para>
+        ///     <para><see cref="Status.NotReady"/>: The material is still attached to a mesh object.</para>
+        /// </returns>
+        internal static Status CreatePredefinedMaterial(Context a_nvar, out Material a_material, PredefinedMaterial a_predefinedMaterial)
+        {
+            // Create NVAR acoustic material
+            IntPtr materialPointer;
+            Status status = Internal_CreatePredefinedMaterial(a_nvar.pointer, out materialPointer, a_predefinedMaterial);
+
+            // Create wrapper object for acoustic material
+            a_material = new Material(materialPointer);
+
+            return status;
+        }
+
+        /// <summary>
+        /// Destroys the specified acoustic material
+        /// </summary>
+        /// <remarks>
+        /// Destroys the specified acoustic material. The material should not be currently attached to a mesh object.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material object.</para>
+        ///     <para><see cref="Status.NotReady"/>: The material is still attached to a mesh object.</para>
+        /// </returns>
+        internal static Status DestroyMaterial(Material a_material)
+        {
+            return Internal_DestroyMaterial(a_material.pointer);
+        }
+
+        /// <summary>
+        /// Gets the reflection coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// This function gets the reflection coefficient of the acoustic material.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="a_reflection">Returned reflection coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_reflection"/> is NULL.</para>
+        /// </returns>
+        internal static Status GetMaterialReflection(Material a_material, out float a_reflection)
+        {
+            return Internal_GetMaterialReflection(a_material.pointer, out a_reflection);
+        }
+
+        /// <summary>
+        /// Sets the reflection coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// This function sets the reflection coefficient of the acoustic
+        /// material.Physically, this value should be in the range 
+        /// [0, 1], and the reflection coefficient and transmission
+        /// coefficients should have a sum &lt;= 1.0. The API does not 
+        /// enforce this restriction
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="a_reflection">Reflection coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_reflection"/> is not in the range[0.0, 1.0].</para>
+        /// </returns>
+        internal static Status SetMaterialReflection(Material a_material, float a_reflection)
+        {
+            return Internal_SetMaterialReflection(a_material.pointer, a_reflection);
+        }
+
+        /// <summary>
+        /// Gets the transmission coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// Returns the transmission coefficient of the acoustic material.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="a_transmission">Returned transmission coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_transmission"/> is NULL.</para>
+        /// </returns>
+        internal static Status GetMaterialTransmission(Material a_material, out float a_transmission)
+        {
+            return Internal_GetMaterialTransmission(a_material.pointer, out a_transmission);
+        }
+
+        /// <summary>
+        /// Sets the transmission coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// This function sets the transmission coefficient of the acoustic
+        /// material.Physically, this value should be in the range 
+        /// [0, 1], and the reflection coefficient and transmission
+        /// coefficients should have a sum &lt;= 1.0. The API does not 
+        /// enforce this restriction.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="transmission">Transmission coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_transmission"/> is not in the range[0.0, 1.0].</para>
+        /// </returns>
+        internal static Status SetMaterialTransmission(Material a_material, float a_transmission)
+        {
+            return Internal_SetMaterialTransmission(a_material.pointer, a_transmission);
         }
 
         #endregion

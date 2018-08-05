@@ -672,6 +672,129 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         }
     }
 
+    [TestFixture]
+    [SingleThreaded]
+    public sealed class AcousticMaterialTests
+    {
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarCreateMaterial() and nvarDestroyMaterial() in the managed API")]
+        public void CreateAndDestroy()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create NVAR material
+                    NVAR.Material material;
+                    NVAR.Status status = NVAR.CreateMaterial(context, out material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateMaterial() failed");
+
+                    // Destroy NVAR material
+                    status = NVAR.DestroyMaterial(material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMaterial() failed");
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarCreatePredefinedMaterial() in the managed API")]
+        public void CreatePredefinedMaterial()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create NVAR material
+                    NVAR.Material material;
+                    NVAR.Status status = NVAR.CreatePredefinedMaterial(context, out material, NVAR.PredefinedMaterial.Concrete);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreatePredefinedMaterial() failed");
+
+                    // Destroy NVAR material
+                    status = NVAR.DestroyMaterial(material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMaterial() failed");
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetMaterialReflection() and nvarSetMaterialReflection() in the managed API")]
+        public void GetAndSetMaterialReflection()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create acoustic material
+                    NVAR.Material material;
+                    NVAR.Status status = NVAR.CreateMaterial(context, out material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateMaterial() failed");
+
+                    // Set acoustic material reflection value
+                    float reflection = 1f;
+                    status = NVAR.SetMaterialReflection(material, reflection);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarSetMaterialReflection() failed");
+
+                    // Get acoustic material reflection value
+                    float nvarReflection;
+                    status = NVAR.GetMaterialReflection(material, out nvarReflection);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarGetMaterialReflection() failed");
+
+                    // Ensure NVAR material reflection value is as expected
+                    Assert.AreEqual(reflection, nvarReflection, "NVAR material reflection value not expected value");
+
+                    // Destroy acoustic material
+                    status = NVAR.DestroyMaterial(material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMaterial() failed");
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetMaterialTransmission() and nvarSetMaterialTransmission() in the managed API")]
+        public void GetAndSetMaterialTransmission()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create acoustic material
+                    NVAR.Material material;
+                    NVAR.Status status = NVAR.CreateMaterial(context, out material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateMaterial() failed");
+
+                    // Set acoustic material transmission value
+                    float transmission = 1f;
+                    status = NVAR.SetMaterialTransmission(material, transmission);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarSetMaterialTransmission() failed");
+
+                    // Get acoustic material transmission value
+                    float nvarTransmission;
+                    status = NVAR.GetMaterialTransmission(material, out nvarTransmission);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarGetMaterialTransmission() failed");
+
+                    // Ensure NVAR material transmission value is as expected
+                    Assert.AreEqual(transmission, nvarTransmission, "NVAR material transmission value not expected value");
+
+                    // Destroy acoustic material
+                    status = NVAR.DestroyMaterial(material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMaterial() failed");
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+    }
+
     internal static class TestHelper
     {
         #region Internal Functions
