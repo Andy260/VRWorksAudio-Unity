@@ -418,7 +418,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
 
         [Test]
         [Category("Managed Binding API Test")]
-        [Description("Tests nvarGetDeviceNum() in the managed API")]
+        [Description("Tests nvarGetListenerLocation() and nvarSetListenerLocation() in the managed API")]
         public void GetAndSetListenerLocation()
         {
             TestHelper.InitialiseNVAR(0);
@@ -441,6 +441,40 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
 
                     // Ensure NVAR location and set location are the same
                     Assert.AreEqual(newListenerLocation, nvarListenerLocation, "NVAR listener location not expected value");
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetListenerOrientation() and nvarSetListenerOrientation() in the managed API")]
+        public void GetAndSetListenerOrientation()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Set NVAR listener orientation
+                    Vector3 orientationForward  = Vector3.forward;
+                    Vector3 orientationUp       = Vector3.up;
+                    NVAR.Status status          = NVAR.SetListenerOrientation(context, orientationForward, orientationUp);
+
+                    // Ensure call to NVAR succeeded
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarSetListenerOrientation() failed");
+
+                    // Get NVAR listener orientation
+                    Vector3 nvarOrientationForward;
+                    Vector3 nvarOrientationUp;
+                    status = NVAR.GetListenerOrientation(context, out nvarOrientationForward, out nvarOrientationUp);
+
+                    // Ensure call to NVAR succeeded
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarGetListenerOrientation() failed");
+
+                    // Ensure NVAR orientation and set orientation are the same
+                    Assert.AreEqual(orientationForward, nvarOrientationForward, "NVAR listener orientation forward vector not expected value");
+                    Assert.AreEqual(orientationUp, nvarOrientationUp, "NVAR listener orientation up vector not expected value");
                 }
                 TestHelper.DestroyNVARContext(context);
             }

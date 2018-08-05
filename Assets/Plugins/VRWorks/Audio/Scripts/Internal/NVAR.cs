@@ -864,6 +864,60 @@ namespace NVIDIA.VRWorksAudio.Internal
         [DllImport("nvar", EntryPoint = "nvarExportOBJs")]
         private static extern Status Internal_ExportOBJs(IntPtr a_nvar, string a_objFileBaseName);
 
+        /// <summary>
+        /// Gets the orientation of the listener
+        /// </summary>
+        /// <remarks>
+        /// Returns the orientation of the listener in the scene.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_forward">Returned forward orientation of the listener</param>
+        /// <param name="a_up">Returned up orientation of the listener</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> or <see cref="a_up"/> is NULL.</para>
+        /// </returns>
+        /// <summary>
+        /// Gets the orientation of the listener
+        /// </summary>
+        /// <remarks>
+        /// Returns the orientation of the listener in the scene.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_forward">Returned forward orientation of the listener</param>
+        /// <param name="a_up">Returned up orientation of the listener</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> or <see cref="a_up"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetListenerOrientation")]
+        private static extern Status Internal_GetListenerOrientation(IntPtr a_nvar, out Float3 a_forward, out Float3 a_up);
+
+        /// <summary>
+        /// Sets the orientation of the listener
+        /// </summary>
+        /// <remarks>
+        /// Sets the forward and up orthogonal orientation
+        /// vectors of the listener in the scene. The forward vector is
+        /// directed away from the listener in the direction the listener
+        /// is facing. The up vector is directed away from the top of
+        /// listener. The specified vectors must be orthogonal.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_forward">The forward orientation of the listener</param>
+        /// <param name="a_up">The up orientation of the listener</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> and 
+        ///           <see cref="a_up"/> are not orthogonal.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetListenerOrientation")]
+        private static extern Status Internal_SetListenerOrientation(IntPtr a_nvar, Float3 a_forward, Float3 a_up);
+
         #endregion
 
         #region Error Handling
@@ -1338,6 +1392,72 @@ namespace NVIDIA.VRWorksAudio.Internal
         internal static Status SetListenerLocation(Context a_nvar, Vector3 a_location)
         {
             return Internal_SetListenerLocation(a_nvar.pointer, (Float3)a_location);
+        }
+
+        /// <summary>
+        /// Gets the orientation of the listener
+        /// </summary>
+        /// <remarks>
+        /// Returns the orientation of the listener in the scene.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_forward">Returned forward orientation of the listener</param>
+        /// <param name="a_up">Returned up orientation of the listener</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> or <see cref="a_up"/> is NULL.</para>
+        /// </returns>
+        /// <summary>
+        /// Gets the orientation of the listener
+        /// </summary>
+        /// <remarks>
+        /// Returns the orientation of the listener in the scene.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_forward">Returned forward orientation of the listener</param>
+        /// <param name="a_up">Returned up orientation of the listener</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> or <see cref="a_up"/> is NULL.</para>
+        /// </returns>
+        internal static Status GetListenerOrientation(Context a_nvar, out Vector3 a_forward, out Vector3 a_up)
+        {
+            // Get NVAR listener orientation
+            Float3 forward, up;
+            Status status = Internal_GetListenerOrientation(a_nvar.pointer, out forward, out up);
+
+            // Assign out parameters
+            a_forward   = (Vector3)forward;
+            a_up        = (Vector3)up;
+
+            return status;
+        }
+
+        /// <summary>
+        /// Sets the orientation of the listener
+        /// </summary>
+        /// <remarks>
+        /// Sets the forward and up orthogonal orientation
+        /// vectors of the listener in the scene. The forward vector is
+        /// directed away from the listener in the direction the listener
+        /// is facing. The up vector is directed away from the top of
+        /// listener. The specified vectors must be orthogonal.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_forward">The forward orientation of the listener</param>
+        /// <param name="a_up">The up orientation of the listener</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> and 
+        ///           <see cref="a_up"/> are not orthogonal.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        internal static Status SetListenerOrientation(Context a_nvar, Vector3 a_forward, Vector3 a_up)
+        {
+            return Internal_SetListenerOrientation(a_nvar.pointer, (Float3)a_forward, (Float3)a_up);
         }
 
         /// <summary>
