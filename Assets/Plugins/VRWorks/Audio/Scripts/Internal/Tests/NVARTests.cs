@@ -322,7 +322,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
             {
                 NVAR.Context context = TestHelper.CreateNVARContext();
                 {
-                    string filePath = string.Format("{0}\\VRWorks Audio - Unity\\Unit Tests\\ExportOBJ_Test", Path.GetTempPath());
+                    string filePath = "ExportOBJ_Test";
 
                     // Create NVAR OBJ export file
                     NVAR.Status status = NVAR.ExportOBJs(context, filePath);
@@ -330,6 +330,16 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
 
                     // Ensure we have a file created
                     FileAssert.Exists(filePath + ".obj");
+
+                    // Destroy generated files, if created
+                    if (File.Exists(filePath + ".obj"))
+                    {
+                        File.Delete(filePath + ".obj");
+                    }
+                    if (File.Exists(filePath + ".mtl"))
+                    {
+                        File.Delete(filePath + ".mtl");
+                    }
                 }
                 TestHelper.DestroyNVARContext(context);
             }
