@@ -428,7 +428,7 @@ namespace NVIDIA.VRWorksAudio.Internal
 
             internal Matrix4x4(UnityEngine.Matrix4x4 a_matrix)
             {
-                _a = new float[]
+                _a = new float[16]
                 {
                     a_matrix.m00, a_matrix.m01, a_matrix.m02, a_matrix.m03,
                     a_matrix.m10, a_matrix.m11, a_matrix.m12, a_matrix.m13,
@@ -2409,5 +2409,7 @@ namespace NVIDIA.VRWorksAudio.Internal
         }
 
         #endregion
+
+
     }
 }

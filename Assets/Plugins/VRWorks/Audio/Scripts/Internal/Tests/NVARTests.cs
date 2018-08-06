@@ -329,6 +329,10 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
                     NVAR.Status status = NVAR.ExportOBJs(context, filePath);
                     Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarExportOBJs() failed");
 
+                    // Wait for NVAR to idle
+                    status = NVAR.Synchronize(context);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarSyncronize() failed");
+
                     // Ensure we have a file created
                     FileAssert.Exists(filePath + ".obj");
 
