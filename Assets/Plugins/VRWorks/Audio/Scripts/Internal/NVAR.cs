@@ -318,6 +318,30 @@ namespace NVIDIA.VRWorksAudio.Internal
         }
 
         /// <summary>
+        /// An opaque handle to an acoustic mesh.
+        /// </summary>
+        internal struct Mesh
+        {
+            #region Properties
+
+            /// <summary>
+            /// Internal pointer to NVAR acoustic mesh
+            /// </summary>
+            internal IntPtr pointer { get; set; }
+
+            #endregion
+
+            #region Constructors
+
+            internal Mesh(IntPtr a_nvarPointer)
+            {
+                pointer = a_nvarPointer;
+            }
+
+            #endregion
+        }
+
+        /// <summary>
         /// 3D positions and vectors
         /// </summary>
         /// <remarks>
@@ -358,6 +382,77 @@ namespace NVIDIA.VRWorksAudio.Internal
             public static explicit operator Vector3(Float3 a_float3)
             {
                 return new Vector3(a_float3.x, a_float3.y, a_float3.z);
+            }
+
+            #endregion
+        }
+
+        /// <summary>
+        /// Type used to store a transformation matrix
+        /// </summary>
+        /// <remarks>
+        /// This type describes the affine transformation matrix of the 
+        /// geometry objects in the scene.Transformation matrices are specified
+        /// to NVAR in row major ordering where a[3], a[7], and a[11]
+        /// are the translation components. If vIn is a 4x1
+        /// input vector and mat4x4 is the 4x4 transformation matrix, the output 
+        /// vector vOut = mat4x4 * Vin.
+        /// </remarks>
+        [StructLayout(LayoutKind.Sequential, Size = 64)]
+        private struct Matrix4x4
+        {
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+            private float[] _a;
+
+            #region Properties
+
+            /// <summary>
+            /// 4 rows by 4 columns
+            /// </summary>
+            internal float[] a
+            {
+                get
+                {
+                    if (_a == null)
+                    {
+                        _a = new float[16];
+                    }
+
+                    return _a;
+                }
+            }
+
+            #endregion
+
+            #region Constructors
+
+            internal Matrix4x4(UnityEngine.Matrix4x4 a_matrix)
+            {
+                _a = new float[]
+                {
+                    a_matrix.m00, a_matrix.m01, a_matrix.m02, a_matrix.m03,
+                    a_matrix.m10, a_matrix.m11, a_matrix.m12, a_matrix.m13,
+                    a_matrix.m20, a_matrix.m21, a_matrix.m22, a_matrix.m23,
+                    a_matrix.m30, a_matrix.m31, a_matrix.m32, a_matrix.m33
+                };
+            }
+
+            #endregion
+
+            #region Operator Overloads
+
+            public static explicit operator Matrix4x4(UnityEngine.Matrix4x4 a_matrix)
+            {
+                return new Matrix4x4(a_matrix);
+            }
+
+            public static explicit operator UnityEngine.Matrix4x4(Matrix4x4 a_matrix)
+            {
+                return new UnityEngine.Matrix4x4(
+                    new Vector4(a_matrix.a[0], a_matrix.a[4], a_matrix.a[8], a_matrix.a[12]),
+                    new Vector4(a_matrix.a[1], a_matrix.a[5], a_matrix.a[9], a_matrix.a[13]),
+                    new Vector4(a_matrix.a[2], a_matrix.a[6], a_matrix.a[10], a_matrix.a[14]),
+                    new Vector4(a_matrix.a[3], a_matrix.a[7], a_matrix.a[11], a_matrix.a[15]));
             }
 
             #endregion
@@ -888,7 +983,7 @@ namespace NVIDIA.VRWorksAudio.Internal
         ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_objFileBaseName"/> is NULL.</para>
         ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
         /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarExportOBJs")]
+        [DllImport("nvar", EntryPoint = "nvarExportOBJs", CharSet = CharSet.Ansi)]
         private static extern Status Internal_ExportOBJs(IntPtr a_nvar, string a_objFileBaseName);
 
         /// <summary>
@@ -1067,7 +1162,119 @@ namespace NVIDIA.VRWorksAudio.Internal
         ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_transmission"/> is not in the range[0.0, 1.0].</para>
         /// </returns>
         [DllImport("nvar", EntryPoint = "nvarSetMaterialTransmission")]
-        internal static extern Status Internal_SetMaterialTransmission(IntPtr a_material, float a_transmission);
+        private static extern Status Internal_SetMaterialTransmission(IntPtr a_material, float a_transmission);
+
+        /// <summary>
+        /// Creates an acoustic mesh
+        /// </summary>
+        /// <remarks>
+        /// Creates an acoustic mesh from the vertices, faces, and acoustic
+        /// material. The function scales and places the mesh in the scene
+        /// using the specified transformation matrix. Changes will be incorporated
+        /// into the scene when the next call to::nvarCommitGeometry
+        /// or <see cref="nvarTraceAudio"/> is executed.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_mesh">Returned mesh object</param>
+        /// <param name="a_transform">The transform of the mesh</param>
+        /// <param name="a_vertices">The array of vertices</param>
+        /// <param name="a_numVertices">The number of <see cref="a_vertices"/></param>
+        /// <param name="a_faces">The array of faces</param>
+        /// <param name="a_numFaces">The number of <see cref="a_faces"/></param>
+        /// <param name="a_material">The material applied to the mesh</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: Possible causes: <see cref="a_nvar"/> is not a valid context;
+        ///           <see cref="a_mesh"/>, <see cref="a_transform"/>, <see cref="a_vertices"/>, or <see cref="a_faces"/>
+        ///           is NULL; the number of <see cref="a_numVertices"/> is not valid; the number of <see cref="a_numFaces"/>
+        ///           is not valid; or the <see cref="a_material"/> value is not valid.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarCreateMesh")]
+        private static extern Status Internal_CreateMesh(IntPtr a_nvar, out IntPtr a_mesh, Matrix4x4 a_transform, Float3[] a_vertices, int a_numVertices,
+                                                               int[] a_faces, int a_numFaces, IntPtr a_material);
+
+        /// <summary>
+        /// Destroys the specified acoustic mesh
+        /// </summary>
+        /// <remarks>
+        /// Destroys the specified acoustic mesh and
+        /// releases any associated resources. The mesh will be removed from
+        /// the scene when the next call to <see cref="CommitGeometry(Context)"/> or
+        /// <see cref="TraceAudio(Context, IntPtr)"/> is executed.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh object.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarDestroyMesh")]
+        private static extern Status Internal_DestroyMesh(IntPtr a_mesh);
+
+        /// <summary>
+        /// Gets the acoustic material of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Returns the acoustic material applied to the specified mesh.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_material">Returned material object</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_material"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetMeshMaterial")]
+        private static extern Status Internal_GetMeshMaterial(IntPtr a_mesh, out IntPtr a_material);
+
+        /// <summary>
+        /// Sets the acoustic material of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Sets acoustic material of the specified mesh.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_material">Valid material handle</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_material"/> is not a valid material.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetMeshMaterial")]
+        private static extern Status Internal_SetMeshMaterial(IntPtr a_mesh, IntPtr a_material);
+
+        /// <summary>
+        /// Gets the transform of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Returns the transformation matrix of the specified mesh.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_transform">Returned transformation matrix</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_transform"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetMeshTransform")]
+        private static extern Status Internal_GetMeshTransform(IntPtr a_mesh, out Matrix4x4 a_transform);
+
+        /// <summary>
+        /// Sets the transform of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Sets transformation matrix for the specified mesh object.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_transform">The transformation matrix</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetMeshTransform")]
+        private static extern Status Internal_SetMeshTransform(IntPtr a_mesh, Matrix4x4 a_transform);
 
         #endregion
 
@@ -2050,6 +2257,155 @@ namespace NVIDIA.VRWorksAudio.Internal
         internal static Status SetMaterialTransmission(Material a_material, float a_transmission)
         {
             return Internal_SetMaterialTransmission(a_material.pointer, a_transmission);
+        }
+
+        #endregion
+
+        #region Acoustic Mesh Functions
+
+        /// <summary>
+        /// Creates an acoustic mesh
+        /// </summary>
+        /// <remarks>
+        /// Creates an acoustic mesh from the vertices, faces, and acoustic
+        /// material. The function scales and places the mesh in the scene
+        /// using the specified transformation matrix. Changes will be incorporated
+        /// into the scene when the next call to::nvarCommitGeometry
+        /// or <see cref="nvarTraceAudio"/> is executed.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_mesh">Returned mesh object</param>
+        /// <param name="a_transform">The transform of the mesh</param>
+        /// <param name="a_vertices">The array of vertices</param>
+        /// <param name="a_faces">The array of faces</param>
+        /// <param name="a_material">The material applied to the mesh</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: Possible causes: <see cref="a_nvar"/> is not a valid context;
+        ///           <see cref="a_mesh"/>, <see cref="a_transform"/>, <see cref="a_vertices"/>, or <see cref="a_faces"/>
+        ///           is NULL; or the <see cref="a_material"/> value is not valid.</para>
+        /// </returns>
+        internal static Status CreateMesh(Context a_nvar, out Mesh a_mesh, UnityEngine.Matrix4x4 a_transform, Vector3[] a_vertices, int[] a_faces, Material a_material)
+        {
+            // Convert vertices array to NVAR type
+            Float3[] nvarVertices = Array.ConvertAll(a_vertices, vertice => (Float3)vertice);
+
+            // Create NVAR mesh
+            IntPtr nvarMesh;
+            Status status = Internal_CreateMesh(a_nvar.pointer, out nvarMesh, (Matrix4x4)a_transform, nvarVertices, nvarVertices.Length,
+                a_faces, a_faces.Length, a_material.pointer);
+
+            // Create wrapped NVAR Mesh
+            a_mesh = new Mesh(nvarMesh);
+
+            return status;
+        }
+
+        /// <summary>
+        /// Destroys the specified acoustic mesh
+        /// </summary>
+        /// <remarks>
+        /// Destroys the specified acoustic mesh and
+        /// releases any associated resources. The mesh will be removed from
+        /// the scene when the next call to <see cref="CommitGeometry(Context)"/> or
+        /// <see cref="TraceAudio(Context, IntPtr)"/> is executed.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh object.</para>
+        /// </returns>
+        internal static Status DestroyMesh(Mesh a_mesh)
+        {
+            return Internal_DestroyMesh(a_mesh.pointer);
+        }
+
+        /// <summary>
+        /// Gets the acoustic material of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Returns the acoustic material applied to the specified mesh.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_material">Returned material object</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_material"/> is NULL.</para>
+        /// </returns>
+        internal static Status GetMeshMaterial(Mesh a_mesh, out Material a_material)
+        {
+            // Get NVAR acoustic material
+            IntPtr nvarMaterial;
+            Status status = Internal_GetMeshMaterial(a_mesh.pointer, out nvarMaterial);
+
+            // Create wrapped acoustic material object
+            a_material = new Material(nvarMaterial);
+
+            return status;
+        }
+
+        /// <summary>
+        /// Sets the acoustic material of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Sets acoustic material of the specified mesh.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_material">Valid material handle</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_material"/> is not a valid material.</para>
+        /// </returns>
+        internal static Status SetMeshMaterial(Mesh a_mesh, Material a_material)
+        {
+            return Internal_SetMeshMaterial(a_mesh.pointer, a_material.pointer);
+        }
+
+        /// <summary>
+        /// Gets the transform of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Returns the transformation matrix of the specified mesh.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_transform">Returned transformation matrix</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_transform"/> is NULL.</para>
+        /// </returns>
+        internal static Status GetMeshTransform(Mesh a_mesh, out UnityEngine.Matrix4x4 a_transform)
+        {
+            // Get NVAR acoustic mesh transform
+            Matrix4x4 matrix;
+            Status status = Internal_GetMeshTransform(a_mesh.pointer, out matrix);
+
+            // Convert NVAR matrix to Unity matrix
+            a_transform = (UnityEngine.Matrix4x4)matrix;
+
+            return status;
+        }
+
+        /// <summary>
+        /// Sets the transform of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Sets transformation matrix for the specified mesh object.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_transform">The transformation matrix</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh.</para>
+        /// </returns>
+        internal static Status SetMeshTransform(Mesh a_mesh, UnityEngine.Matrix4x4 a_transform)
+        {
+            return Internal_SetMeshTransform(a_mesh.pointer, (Matrix4x4)a_transform);
         }
 
         #endregion

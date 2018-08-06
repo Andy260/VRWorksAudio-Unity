@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Threading;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace NVIDIA.VRWorksAudio.Internal.Tests
 {
@@ -679,7 +680,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarCreateMaterial() and nvarDestroyMaterial() in the managed API")]
-        public void CreateAndDestroy()
+        public void CreateAndDestroyMaterial()
         {
             TestHelper.InitialiseNVAR(0);
             {
@@ -788,6 +789,164 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
                     // Destroy acoustic material
                     status = NVAR.DestroyMaterial(material);
                     Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMaterial() failed");
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+    }
+
+    [TestFixture]
+    [SingleThreaded]
+    public sealed class AcousticMeshTests
+    {
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarCreateMaterial() and nvarDestroyMaterial() in the managed API")]
+        public void CreateAndDestroyMesh()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create acoustic material to attach to acoustic mesh
+                    NVAR.Material material;
+                    NVAR.Status status = NVAR.CreateMaterial(context, out material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateMaterial() failed");
+
+                    // Create Unity mesh to create NVAR mesh from
+                    GameObject cubeObject   = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    Mesh cubeMesh           = cubeObject.GetComponent<MeshFilter>().sharedMesh;
+
+                    // Create acoustic NVAR mesh
+                    NVAR.Mesh mesh;
+                    status = NVAR.CreateMesh(context, out mesh, cubeObject.transform.worldToLocalMatrix, cubeMesh.vertices, cubeMesh.triangles, material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateMesh() failed");
+
+                    // Destroy acoustic mesh
+                    status = NVAR.DestroyMesh(mesh);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMesh() failed");
+
+                    // Destroy acoustic material
+                    status = NVAR.DestroyMaterial(material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMesh() failed");
+                    // Destroy primitive cube object
+                    Object.DestroyImmediate(cubeObject);
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetMeshMaterial() and nvarSetMeshMaterial() in the managed API")]
+        public void GetAndSetMeshMaterial()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create initially attached acoustic material
+                    NVAR.Material attachedMaterial;
+                    NVAR.Status status = NVAR.CreateMaterial(context, out attachedMaterial);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateMaterial() failed");
+
+                    // Create Unity mesh to create NVAR mesh from
+                    GameObject cubeObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    Mesh cubeMesh = cubeObject.GetComponent<MeshFilter>().sharedMesh;
+
+                    // Create acoustic NVAR mesh
+                    NVAR.Mesh mesh;
+                    status = NVAR.CreateMesh(context, out mesh, cubeObject.transform.worldToLocalMatrix, cubeMesh.vertices, cubeMesh.triangles, attachedMaterial);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateMesh() failed");
+
+                    // Create acoustic material to swap on created acoustic mesh
+                    NVAR.Material swapMaterial;
+                    status = NVAR.CreateMaterial(context, out swapMaterial);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateMaterial() failed");
+
+                    // Set acoustic material on created acoustic mesh
+                    status = NVAR.SetMeshMaterial(mesh, swapMaterial);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarSetMeshMaterial() failed");
+
+                    // Get current material on acoustic mesh
+                    NVAR.Material nvarMaterial;
+                    status = NVAR.GetMeshMaterial(mesh, out nvarMaterial);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarGetMeshMaterial() failed");
+
+                    // Ensure acoustic material is swapped acoustic material on created acoustic mesh
+                    Assert.AreEqual(swapMaterial, nvarMaterial, "NVAR material on acoustic mesh not expected material");
+
+                    // Destroy acoustic mesh
+                    status = NVAR.DestroyMesh(mesh);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMesh() failed");
+                    // Destroy initially attached acoustic material
+                    status = NVAR.DestroyMaterial(attachedMaterial);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMaterial() failed");
+                    // Destroy acoustic material swapping onto acoustic mesh
+                    status = NVAR.DestroyMaterial(swapMaterial);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMaterial() failed");
+                    // Destroy primitive cube object
+                    Object.DestroyImmediate(cubeObject);
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetMeshTransform() and nvarSetMeshTransform() in the managed API")]
+        public void GetAndSetMeshTransform()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create acoustic material to attach to acoustic mesh
+                    NVAR.Material material;
+                    NVAR.Status status = NVAR.CreateMaterial(context, out material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateMaterial() failed");
+
+                    // Create Unity mesh to create NVAR mesh from
+                    GameObject cubeObject   = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    Mesh cubeMesh           = cubeObject.GetComponent<MeshFilter>().sharedMesh;
+
+                    // Set initial position of cube object to base acoustic mesh's transform from
+                    cubeObject.transform.position   = new Vector3(100, 200, 300);
+                    Matrix4x4 initialCubeMatrix     = cubeObject.transform.worldToLocalMatrix;
+
+                    // Create acoustic NVAR mesh
+                    NVAR.Mesh mesh;
+                    status = NVAR.CreateMesh(context, out mesh, initialCubeMatrix, cubeMesh.vertices, cubeMesh.triangles, material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateMesh() failed");
+
+                    // Move cube object, so we can move the acoustic mesh
+                    cubeObject.transform.position   = new Vector3(-100, 50, 200);
+                    Matrix4x4 newCubeMatrix         = cubeObject.transform.worldToLocalMatrix;
+
+                    // Set new mesh transform
+                    status = NVAR.SetMeshTransform(mesh, newCubeMatrix);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarSetMeshTransform() failed");
+
+                    // Get current transform in NVAR of acoustic mesh
+                    Matrix4x4 nvarTransform;
+                    status = NVAR.GetMeshTransform(mesh, out nvarTransform);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarGetMeshTransform() failed");
+
+                    // Ensure new mesh transform in NVAR is as expected
+                    Assert.AreEqual(newCubeMatrix, nvarTransform, "NVAR acoustic mesh transform not expected value");
+
+                    // Destroy acoustic mesh
+                    status = NVAR.DestroyMesh(mesh);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMesh() failed");
+
+                    // Destroy acoustic material
+                    status = NVAR.DestroyMaterial(material);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMesh() failed");
+                    // Destroy primitive cube object
+                    Object.DestroyImmediate(cubeObject);
                 }
                 TestHelper.DestroyNVARContext(context);
             }
