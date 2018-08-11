@@ -303,7 +303,7 @@ namespace NVIDIA.VRWorksAudio.Internal
             /// <summary>
             /// Internal pointer to NVAR acoustic material
             /// </summary>
-            internal IntPtr pointer { get; set; }
+            internal IntPtr pointer { get; private set; }
 
             #endregion
 
@@ -342,6 +342,36 @@ namespace NVIDIA.VRWorksAudio.Internal
         }
 
         /// <summary>
+        /// An opaque handle to a sound source
+        /// </summary>
+        internal struct Source
+        {
+            #region Properties
+
+            /// <summary>
+            /// Internal pointer to NVAR sound source
+            /// </summary>
+            internal IntPtr pointer { get; set; }
+
+            /// <summary>
+            /// NVAR context this audio source was created in
+            /// </summary>
+            internal Context context { get; private set; }
+
+            #endregion
+
+            #region Constructors
+
+            internal Source(IntPtr a_nvarPointer, Context a_context)
+            {
+                pointer = a_nvarPointer;
+                context = a_context;
+            }
+
+            #endregion
+        }
+
+        /// <summary>
         /// 3D positions and vectors
         /// </summary>
         /// <remarks>
@@ -367,16 +397,22 @@ namespace NVIDIA.VRWorksAudio.Internal
             /// </summary>
             internal float z;
 
+            #region Constructors
+
+            internal Float3(Vector3 a_vector3)
+            {
+                x = a_vector3.x;
+                y = a_vector3.y;
+                z = a_vector3.z;
+            }
+
+            #endregion
+
             #region Operator Overloads
 
             public static explicit operator Float3(Vector3 a_vector3)
             {
-                Float3 float3 = new Float3();
-                float3.x = a_vector3.x;
-                float3.y = a_vector3.y;
-                float3.z = a_vector3.z;
-
-                return float3;
+                return new Float3(a_vector3);
             }
 
             public static explicit operator Vector3(Float3 a_float3)
@@ -1275,6 +1311,264 @@ namespace NVIDIA.VRWorksAudio.Internal
         /// </returns>
         [DllImport("nvar", EntryPoint = "nvarSetMeshTransform")]
         private static extern Status Internal_SetMeshTransform(IntPtr a_mesh, Matrix4x4 a_transform);
+
+        /// <summary>
+        /// Create a sound source
+        /// </summary>
+        /// <remarks>
+        /// Creates a sound source in the scene.  Sound sources are added
+        /// at the origin and should be fully initialised (for example, moved to their location,
+        /// all other parameters set) before the next call to <see cref="TraceAudio(Context, IntPtr)"/>.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_effect">The effect applied per source</param>
+        /// <param name="a_source">Returned sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_source"/> is NULL.</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarCreateSource")]
+        private static extern Status Internal_CreateSource(IntPtr a_nvar, EffectPreset a_effect, out IntPtr a_source);
+
+        /// <summary>
+        /// Destroys the specified sound source
+        /// </summary>
+        /// <remarks>
+        /// Destroys the specified sound source and releases any associated resources.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarDestroySource")]
+        private static extern Status Internal_DestroySource(IntPtr a_source);
+
+        /// <summary>
+        /// Gets the gain applied to the direct path sound.
+        /// </summary>
+        /// <remarks>
+        /// Returns the direct path gain of the specified sound source.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">Returned direct path gain</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source or <see cref="pMix"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetSourceDirectPathGain")]
+        private static extern Status Internal_GetSourceDirectPathGain(IntPtr a_source, out float a_gain);
+
+        /// <summary>
+        /// Sets the gain applied to the direct path
+        /// </summary>
+        /// <remarks>
+        /// Sets the gain applied to the direct path audio in the output
+        /// filter for the specified sound source. Direct path audio is audio
+        /// which follows an unoccluded straight line between the source and
+        /// listener.
+        /// 
+        /// A value of 0.0 has the effect
+        /// of disabling the direct sound path. A value of 1.0 incorporates
+        /// the direct sound path along with the indirect sound paths. A value
+        /// greater than 1.0 will amplify the sound on the direct path between
+        /// the source and listener. Valid range is [0.0, Inf).
+        /// 
+        /// If this function is not called, a default value of 
+        /// <see cref="DefaultDirectPathGain"/> is used for the source.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">Direct path gain</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a
+        ///           valid sound source or <see cref="a_gain"/> is not in the range
+        ///           [0.0, Inf).</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetSourceDirectPathGain")]
+        private static extern Status Internal_SetSourceDirectPathGain(IntPtr a_source, float a_gain);
+
+        /// <summary>
+        /// Gets the indirect path gain of the sound source
+        /// </summary>
+        /// <remarks>
+        /// Returns the indirect path gain for the specified sound source.
+        /// If not set earlier with <see cref="SetSourceIndirectPathGain(Source, float)"/> this returns the
+        /// default indirect path gain.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">Returned contribution factor for the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source or <see cref="pContribution"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetSourceIndirectPathGain")]
+        private static extern Status Internal_GetSourceIndirectPathGain(IntPtr a_source, out float a_gain);
+
+        /// <summary>
+        /// Sets the gain applied to indirect paths
+        /// </summary>
+        /// <remarks>
+        /// Sets the gain applied to indirect paths between the specified sound source
+        /// and the listener. An indirect path is a path which has at least one reflection
+        /// or transmission point between the source and listener.
+        /// 
+        /// A value greater than 1.0 has will amplify sound along indirect paths. A value
+        /// of less than 1.0 will attenuate indirect path audio, that is, re-verb. A value of
+        /// zero has the effect of disabling re-verb for the specified source entirely. 
+        /// Valid range is [0.0, Inf).
+        /// 
+        /// If this function is not called for a source, the default value
+        /// <see cref="DefaultIndirectPathGain"/> is used.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">The contribution factor for the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a
+        ///           valid sound source or contribution is not in the range[0.0, Inf).</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetSourceIndirectPathGain")]
+        private static extern Status Internal_SetSourceIndirectPathGain(IntPtr a_source, float a_gain);
+
+        /// <summary>
+        /// Gets the sound source location
+        /// </summary>
+        /// <remarks>
+        /// Returns the location of the sound source in the scene.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_location">Returned location of the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source or <see cref="a_location"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetSourceLocation")]
+        private static extern Status Internal_GetSourceLocation(IntPtr a_source, out Float3 a_location);
+
+        /// <summary>
+        /// Sets the sound source location
+        /// </summary>
+        /// <remarks>
+        /// Sets the location of the sound source in the scene.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_location">The location of the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="nvarInitialize"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetSourceLocation")]
+        private static extern Status Internal_SetSourceLocation(IntPtr a_source, Float3 a_location);
+
+        /// <summary>
+        /// Gets the filter array size
+        /// </summary>
+        /// <remarks>
+        /// Returns the size in bytes of the filter array for the <see cref="GetSourceFilters(Source, float[])"/> function call.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_filterArraySize">Returned filter array size in bytes</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_filterArraySize"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetSourceFilterArraySize")]
+        private static extern Status Internal_GetSourceFilterArraySize(IntPtr a_nvar, out int a_filterArraySize);
+
+        /// <summary>
+        /// Gets the filters for the sound source
+        /// </summary>
+        /// <remarks>
+        /// This function returns an array of filters that were generated
+        /// by the call to <see cref="TraceAudio(Context, IntPtr)"/>. The filter array must be
+        /// at least filterArraySize bytes in size. This size is returned by the
+        /// function <see cref="GetSourceFilterArraySize(Context, out int)"/>.
+        /// 
+        /// The number of elements in the filter array is as follows:
+        /// <code>
+        /// numFilterArrayElements = filterArraySize / sizeof(float);
+        /// </code>
+        /// 
+        /// The number of elements in each filter is as follows:
+        /// <code>
+        /// int numElementsPerChannel = numFilterArrayElements /
+        /// umChannels;
+        /// </code>
+        /// 
+        /// The pointer to the filter array for each channel is as follows:
+        /// <code>
+        /// float* ptr = &filterArray[numFiltersPerChannel * channel];
+        /// </code>
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_filterArray">Returned array of filters</param>
+        /// <param name="a_arraySize">Size of filter array (Only used within C# binding for marshalling of filter array)</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid context or <see cref="a_filterArray"/> is NULL.</para>
+        ///     <para><see cref="Status.NotReady"/>: The tracer geometry is not ready or the audio trace is in progress.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetSourceFilters")]
+        private static extern Status Internal_GetSourceFilters(IntPtr a_source, IntPtr a_filtersArray);
+
+        /// <summary>
+        /// Applies the sound source filters to the input data
+        /// </summary>
+        /// <remarks>
+        /// This function applies the filters generated by
+        /// <see cref="TraceAudio(Context, IntPtr)"/> to the audio samples contained in the
+        /// input data buffer. The input buffer format is a single 
+        /// audio channel of floating-point PCM data.
+        /// <see cref="a_in"/> is an array of at least <see cref="a_numSamples"/> floating point values.
+        /// 
+        /// <see cref="a_out"/> is an array of pointers to output buffers, one buffer for
+        /// each output channel. The number of pointers should be
+        /// nvar_t::channels and the buffer for each channel must
+        /// be at least sizeof(float) * <see cref="a_numSamples"/> bytes
+        /// in size.
+        /// 
+        /// To prevent internal reallocations, the value of <see cref="a_numSamples"/>
+        /// should not be changed from call to call.The function
+        /// may be called with
+        /// <see cref="a_out"/> and <see cref="a_in"/> both NULL to allocate buffers internally for
+        /// <see cref="a_numSamples"/>. Calling to allocate before using is an optimisation
+        /// that is not required for correct operation.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_out">Returned audio data for each channel</param>
+        /// <param name="a_in">The input audio data buffer to process</param>
+        /// <param name="numSamples">The number of audio samples to process
+        /// from the input buffer to the output buffer. <see cref="a_numSamples"/>
+        /// must be greater than 0.</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid
+        ///           context, or a buffer pointer in <see cref="a_out"/> is NULL, or
+        ///           <see cref="InputBuffer"/> is NULL, or <see cref="a_numSamples"/> is not in
+        ///           the range(0, <see cref="Int32.MaxValue"/>].</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarApplySourceFilters")]
+        private static extern Status Internal_ApplySourceFilters(IntPtr a_source, IntPtr[] a_out, 
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] float[] a_in, int a_numSamples);
 
         #endregion
 
@@ -2410,6 +2704,376 @@ namespace NVIDIA.VRWorksAudio.Internal
 
         #endregion
 
+        #region Sound Source Functions
 
+        /// <summary>
+        /// Create a sound source
+        /// </summary>
+        /// <remarks>
+        /// Creates a sound source in the scene.  Sound sources are added
+        /// at the origin and should be fully initialised (for example, moved to their location,
+        /// all other parameters set) before the next call to <see cref="TraceAudio(Context, IntPtr)"/>.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_effect">The effect applied per source</param>
+        /// <param name="a_source">Returned sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_source"/> is NULL.</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        /// </returns>
+        internal static Status CreateSource(Context a_nvar, EffectPreset a_effect, out Source a_source)
+        {
+            // Create NVAR sound source
+            IntPtr nvarSource;
+            Status status = Internal_CreateSource(a_nvar.pointer, a_effect, out nvarSource);
+
+            // Create wrapped NVAR sound source object
+            a_source = new Source(nvarSource, a_nvar);
+
+            return status;
+        }
+
+        /// <summary>
+        /// Destroys the specified sound source
+        /// </summary>
+        /// <remarks>
+        /// Destroys the specified sound source and releases any associated resources.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source.</para>
+        /// </returns>
+        internal static Status DestroySource(Source a_source)
+        {
+            return Internal_DestroySource(a_source.pointer);
+        }
+
+        /// <summary>
+        /// Applies the sound source filters to the input data
+        /// </summary>
+        /// <remarks>
+        /// This function applies the filters generated by
+        /// <see cref="TraceAudio(Context, IntPtr)"/> to the audio samples contained in the
+        /// input data buffer. The input buffer format is a single 
+        /// audio channel of floating-point PCM data.
+        /// <see cref="a_in"/> is an array of at least <see cref="a_numSamples"/> floating point values.
+        /// 
+        /// <see cref="a_out"/> is an array of pointers to output buffers, one buffer for
+        /// each output channel. The number of pointers should be
+        /// nvar_t::channels and the buffer for each channel must
+        /// be at least sizeof(float) * <see cref="a_numSamples"/> bytes
+        /// in size.
+        /// 
+        /// To prevent internal reallocations, the value of <see cref="a_numSamples"/>
+        /// should not be changed from call to call.The function
+        /// may be called with
+        /// <see cref="a_out"/> and <see cref="a_in"/> both NULL to allocate buffers internally for
+        /// <see cref="a_numSamples"/>. Calling to allocate before using is an optimisation
+        /// that is not required for correct operation.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_out">Returned audio data for each channel</param>
+        /// <param name="a_in">The input audio data buffer to process</param>
+        /// <param name="numSamples">The number of audio samples to process
+        /// from the input buffer to the output buffer. <see cref="a_numSamples"/>
+        /// must be greater than 0.</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid
+        ///           context, or a buffer pointer in <see cref="a_out"/> is NULL, or
+        ///           <see cref="InputBuffer"/> is NULL, or <see cref="a_numSamples"/> is not in
+        ///           the range(0, <see cref="Int32.MaxValue"/>].</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        internal static Status ApplySourceFilters(Source a_source, out float[][] a_out, float[] a_in, int a_numSamples)
+        {
+            // Get context output format
+            OutputFormat outputFormat;
+            Status status = GetOutputFormat(a_source.context, out outputFormat);
+            // Return any errors from last NVAR call
+            if (status != Status.Success)
+            {
+                a_out = null;
+                return status;
+            }
+
+            // Get current output format channel count
+            int channelCount;
+            status = GetOutputFormatChannels(outputFormat, out channelCount);
+            // Return any errors from last NVAR call
+            if (status != Status.Success)
+            {
+                a_out = null;
+                return status;
+            }
+
+            // Create output array
+            a_out = new float[channelCount][];
+            for (int i = 0; i < a_out.Length; ++i)
+            {
+                a_out[i] = new float[a_numSamples];
+            }
+
+            // Unmanaged handle to a_out parameter array
+            GCHandle[] outHandles   = new GCHandle[a_out.Length];
+            IntPtr[] outPtrs        = new IntPtr[a_out.Length];
+            GCHandle outPtrsHandle  = GCHandle.Alloc(outPtrs, GCHandleType.Pinned);
+
+            // Create unmanaged handles for inner array of a_out
+            for (int i = 0; i < a_out.Length; ++i)
+            {
+                outHandles[i]   = GCHandle.Alloc(a_out[i], GCHandleType.Pinned);
+                outPtrs[i]      = outHandles[i].AddrOfPinnedObject();
+            }
+
+            // Get filters from NVAR
+            status = Internal_ApplySourceFilters(a_source.pointer, outPtrs, a_in, a_numSamples);
+            // Return any errors from last NVAR call
+            if (status != Status.Success)
+            {
+                a_out = null;
+                return status;
+            }
+
+            // Release pinned arrays of a_out
+            foreach (GCHandle handle in outHandles)
+            {
+                handle.Free();
+            }
+            outPtrsHandle.Free();
+
+            return status;
+        }
+
+        /// <summary>
+        /// Gets the filters for the sound source
+        /// </summary>
+        /// <remarks>
+        /// This function returns an array of filters that were generated
+        /// by the call to <see cref="TraceAudio(Context, IntPtr)"/>. The filter array must be
+        /// at least filterArraySize bytes in size. This size is returned by the
+        /// function <see cref="GetSourceFilterArraySize(Context, out int)"/>.
+        /// 
+        /// The number of elements in the filter array is as follows:
+        /// <code>
+        /// numFilterArrayElements = filterArraySize / sizeof(float);
+        /// </code>
+        /// 
+        /// The number of elements in each filter is as follows:
+        /// <code>
+        /// int numElementsPerChannel = numFilterArrayElements /
+        /// umChannels;
+        /// </code>
+        /// 
+        /// The pointer to the filter array for each channel is as follows:
+        /// <code>
+        /// float filter = filterArray[numFiltersPerChannel * channel];
+        /// </code>
+        /// 
+        /// The native API doesn't require a processing context reference, but
+        /// the binding does in order to determine the length of the filter array. As such, 
+        /// a <see cref="Status.InvalidValue"/> may indicate an invalid context reference given
+        /// to the binding, and not an error with the native function call.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_filterArray">Returned array of filters</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid context or <see cref="a_filterArray"/> is NULL.</para>
+        ///     <para><see cref="Status.NotReady"/>: The tracer geometry is not ready or the audio trace is in progress.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        internal static Status GetSourceFilters(Context a_nvar, Source a_source, out float[] a_filterArray)
+        {
+            int filterArraySize;
+            Status status = GetSourceFilterArraySize(a_nvar, out filterArraySize);
+            if (status != Status.Success)
+            {
+                a_filterArray = null;
+                return status;
+            }
+
+            a_filterArray               = new float[filterArraySize];
+            GCHandle filterArrayHandle  = GCHandle.Alloc(a_filterArray, GCHandleType.Pinned);
+            IntPtr filterArrayPtr       = filterArrayHandle.AddrOfPinnedObject();
+
+            status = Internal_GetSourceFilters(a_source.pointer, filterArrayPtr);
+
+            filterArrayHandle.Free();
+            return status;
+        }
+
+        /// <summary>
+        /// Gets the filter array size
+        /// </summary>
+        /// <remarks>
+        /// Returns the size in bytes of the filter array for the <see cref="GetSourceFilters(Source, float[])"/> function call.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_filterArraySize">Returned filter array size in bytes</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_filterArraySize"/> is NULL.</para>
+        /// </returns>
+        internal static Status GetSourceFilterArraySize(Context a_nvar, out int a_filterArraySize)
+        {
+            return Internal_GetSourceFilterArraySize(a_nvar.pointer, out a_filterArraySize);
+        }
+
+        /// <summary>
+        /// Gets the gain applied to the direct path sound.
+        /// </summary>
+        /// <remarks>
+        /// Returns the direct path gain of the specified sound source.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">Returned direct path gain</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source</para>
+        /// </returns>
+        internal static Status GetSourceDirectPathGain(Source a_source, out float a_gain)
+        {
+            return Internal_GetSourceDirectPathGain(a_source.pointer, out a_gain);
+        }
+
+        /// <summary>
+        /// Sets the gain applied to the direct path
+        /// </summary>
+        /// <remarks>
+        /// Sets the gain applied to the direct path audio in the output
+        /// filter for the specified sound source. Direct path audio is audio
+        /// which follows an unoccluded straight line between the source and
+        /// listener.
+        /// 
+        /// A value of 0.0 has the effect
+        /// of disabling the direct sound path. A value of 1.0 incorporates
+        /// the direct sound path along with the indirect sound paths. A value
+        /// greater than 1.0 will amplify the sound on the direct path between
+        /// the source and listener. Valid range is [0.0, Inf).
+        /// 
+        /// If this function is not called, a default value of 
+        /// <see cref="DefaultDirectPathGain"/> is used for the source.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">Direct path gain</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a
+        ///           valid sound source or <see cref="a_gain"/> is not in the range
+        ///           [0.0, Inf).</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        internal static Status SetSourceDirectPathGain(Source a_source, float a_gain)
+        {
+            return Internal_SetSourceDirectPathGain(a_source.pointer, a_gain);
+        }
+
+        /// <summary>
+        /// Gets the indirect path gain of the sound source
+        /// </summary>
+        /// <remarks>
+        /// Returns the indirect path gain for the specified sound source.
+        /// If not set earlier with <see cref="SetSourceIndirectPathGain(Source, float)"/> this returns the
+        /// default indirect path gain.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">Returned contribution factor for the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source or <see cref="pContribution"/> is NULL.</para>
+        /// </returns>
+        internal static Status GetSourceIndirectPathGain(Source a_source, out float a_gain)
+        {
+            return Internal_GetSourceIndirectPathGain(a_source.pointer, out a_gain);
+        }
+
+        /// <summary>
+        /// Sets the gain applied to indirect paths
+        /// </summary>
+        /// <remarks>
+        /// Sets the gain applied to indirect paths between the specified sound source
+        /// and the listener. An indirect path is a path which has at least one reflection
+        /// or transmission point between the source and listener.
+        /// 
+        /// A value greater than 1.0 has will amplify sound along indirect paths. A value
+        /// of less than 1.0 will attenuate indirect path audio, that is, re-verb. A value of
+        /// zero has the effect of disabling re-verb for the specified source entirely. 
+        /// Valid range is [0.0, Inf).
+        /// 
+        /// If this function is not called for a source, the default value
+        /// <see cref="DefaultIndirectPathGain"/> is used.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">The contribution factor for the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a
+        ///           valid sound source or contribution is not in the range[0.0, Inf).</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        internal static Status SetSourceIndirectPathGain(Source a_source, float a_gain)
+        {
+            return Internal_SetSourceIndirectPathGain(a_source.pointer, a_gain);
+        }
+
+        /// <summary>
+        /// Gets the sound source location
+        /// </summary>
+        /// <remarks>
+        /// Returns the location of the sound source in the scene.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_location">Returned location of the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source or <see cref="a_location"/> is NULL.</para>
+        /// </returns>
+        internal static Status GetSourceLocation(Source a_source, out Vector3 a_location)
+        {
+            // Get NVAR source location
+            Float3 nvarSourceLocation;
+            Status status = Internal_GetSourceLocation(a_source.pointer, out nvarSourceLocation);
+
+            // Convert NVAR location to Unity Vector3
+            a_location = (Vector3)nvarSourceLocation;
+
+            return status;
+        }
+
+        /// <summary>
+        /// Sets the sound source location
+        /// </summary>
+        /// <remarks>
+        /// Sets the location of the sound source in the scene.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_location">The location of the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="nvarInitialize"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        internal static Status SetSourceLocation(Source a_source, Vector3 a_location)
+        {
+            return Internal_SetSourceLocation(a_source.pointer, (Float3)a_location);
+        }
+
+        #endregion
     }
 }

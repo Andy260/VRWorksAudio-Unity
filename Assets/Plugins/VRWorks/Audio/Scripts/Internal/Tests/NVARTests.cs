@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 namespace NVIDIA.VRWorksAudio.Internal.Tests
 {
@@ -951,6 +952,264 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
                     Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroyMesh() failed");
                     // Destroy primitive cube object
                     Object.DestroyImmediate(cubeObject);
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+    }
+
+    [TestFixture]
+    [SingleThreaded]
+    public sealed class SoundSourceTests
+    {
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarCreateSource() and nvarDestroySource() in the managed API")]
+        public void CreateAndDestroySource()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create NVAR sound source
+                    NVAR.Source soundSource;
+                    NVAR.Status status = NVAR.CreateSource(context, NVAR.EffectPreset.High, out soundSource);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateSource() failed");
+
+                    // Destroy NVAR sound source
+                    status = NVAR.DestroySource(soundSource);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroySource() failed");
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarApplySourceFilters() in the managed API")]
+        public void ApplySourceFilters()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    int sampleCount = 44100;
+
+                    // Create sound source
+                    NVAR.Source source;
+                    NVAR.Status status = NVAR.CreateSource(context, NVAR.EffectPreset.High, out source);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateSource() failed");
+
+                    // Begin audio trace and synchronise this thread with NVAR
+                    status = NVAR.TraceAudio(context);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarTraceAudio() failed");
+                    status = NVAR.Synchronize(context);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarSyncronise() failed");
+
+                    // Create sample audio data
+                    // (typical data rate is 44100HZ called 20ms per tick within Unity's audio thread
+                    // (and VRWorks Audio only supports stereo)
+                    float[] audioData = new float[sampleCount];
+
+                    // We will generate random audio data with a predictable seed for
+                    // consistent test execution, so we can be sure our NVAR binding 
+                    // is correctly using our data
+                    for (int i = 0; i < audioData.Length; ++i)
+                    {
+                        // Audio data from Unity ranges from -1 - 1 
+                        // (see MonoBehaviour.OnAudioFilterRead(float[], int))
+                        audioData[i] = Random.Range(-1f, 1f);
+                    }
+
+                    // Apply filters from NVAR
+                    float[][] filterData;
+                    status = NVAR.ApplySourceFilters(source, out filterData, audioData, sampleCount);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarApplySourceFilters() failed");
+
+                    // Verify filter data returned from NVAR
+                    Assert.IsNotNull(filterData);
+                    foreach (float[] dataArray in filterData)
+                    {
+                        Assert.IsNotNull(dataArray);
+                    }
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetSourceFilterArraySize() in the managed API")]
+        public void GetSourceFilterArraySize()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Get source filter array size from NVAR
+                    int nvarSourceFilterArraySize = -1;
+                    NVAR.Status status = NVAR.GetSourceFilterArraySize(context, out nvarSourceFilterArraySize);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarGetSourceFilterArraySize() failed");
+
+                    // Ensure a value was returned by NVAR
+                    Assert.AreNotEqual(-1, nvarSourceFilterArraySize, "No value returned from NVAR for filter array size");
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetSourceFilters() in the managed API")]
+        public void GetSourceFilters()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create NVAR sound source
+                    NVAR.Source source;
+                    NVAR.Status status = NVAR.CreateSource(context, NVAR.EffectPreset.High, out source);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateSource() failed");
+
+                    // Trace audio
+                    status = NVAR.TraceAudio(context);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarTraceAudio() failed");
+
+                    // Wait for NVAR to idle
+                    status = NVAR.Synchronize(context);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarSynchronize() failed");
+
+                    // Get NVAR sound source filter array
+                    float[] filterArray;
+                    status = NVAR.GetSourceFilters(context, source, out filterArray);
+
+                    // Ensure the filter array returned from NVAR isn't NULL
+                    Assert.NotNull(filterArray, "Filter array object is NULL");
+
+                    // Get source filter array size from NVAR
+                    int nvarSourceFilterArraySize;
+                    status = NVAR.GetSourceFilterArraySize(context, out nvarSourceFilterArraySize);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarGetSourceFilterArraySize() failed");
+
+                    // Ensure returned NVAR sound source filter array is expected length
+                    Assert.AreEqual(nvarSourceFilterArraySize, filterArray.Length, "Filter array not expected length");
+
+                    // Destroy NVAR sound source
+                    status = NVAR.DestroySource(source);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroySource() failed");
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetSourceDirectGain() and nvarSetSourceDirectGain() in the managed API")]
+        public void GetAndSetSourceDirectGain()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create NVAR sound source
+                    NVAR.Source source;
+                    NVAR.Status status = NVAR.CreateSource(context, NVAR.EffectPreset.High, out source);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateSource() failed");
+
+                    // Set source direct gain value
+                    float directGain = 2f;
+                    status = NVAR.SetSourceDirectPathGain(source, directGain);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarSetSourceDirectPathGain() failed");
+
+                    // Get source direct gain in NVAR
+                    float nvarDirectGain;
+                    status = NVAR.GetSourceDirectPathGain(source, out nvarDirectGain);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarGetSourceDirectPathGain() failed");
+
+                    // Ensure NVAR source direct gain is as expected
+                    Assert.AreEqual(directGain, nvarDirectGain, "NVAR source direct gain not expected value");
+
+                    // Destroy NVAR sound source
+                    status = NVAR.DestroySource(source);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroySource() failed");
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetSourceIndirectGain() and nvarSetSourceIndirectGain() in the managed API")]
+        public void GetAndSetSourceIndirectGain()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create NVAR sound source
+                    NVAR.Source source;
+                    NVAR.Status status = NVAR.CreateSource(context, NVAR.EffectPreset.High, out source);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateSource() failed");
+
+                    // Set source indirect gain value
+                    float indirectGain = 5f;
+                    status = NVAR.SetSourceIndirectPathGain(source, indirectGain);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarSetSourceIndirectPathGain() failed");
+
+                    // Get source indirect gain in NVAR
+                    float nvarIndirectGain;
+                    status = NVAR.GetSourceIndirectPathGain(source, out nvarIndirectGain);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarGetSourceIndirectPathGain() failed");
+
+                    // Ensure NVAR source indirect gain is as expected
+                    Assert.AreEqual(indirectGain, nvarIndirectGain, "NVAR source indirect gain not expected value");
+
+                    // Destroy NVAR sound source
+                    status = NVAR.DestroySource(source);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroySource() failed");
+                }
+                TestHelper.DestroyNVARContext(context);
+            }
+            TestHelper.FinaliseNVAR();
+        }
+
+        [Test]
+        [Category("Managed Binding API Test")]
+        [Description("Tests nvarGetSourceLocation() and nvarSetSourceLocation() in the managed API")]
+        public void GetAndSetSourceLocation()
+        {
+            TestHelper.InitialiseNVAR(0);
+            {
+                NVAR.Context context = TestHelper.CreateNVARContext();
+                {
+                    // Create NVAR sound source
+                    NVAR.Source source;
+                    NVAR.Status status = NVAR.CreateSource(context, NVAR.EffectPreset.High, out source);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarCreateSource() failed");
+
+                    // Set source location
+                    Vector3 location = new Vector3(1, 2, 3);
+                    status = NVAR.SetSourceLocation(source, location);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarSetSourceLocation() failed");
+
+                    // Get source location in NVAR
+                    Vector3 nvarLocation;
+                    status = NVAR.GetSourceLocation(source, out nvarLocation);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarGetSourceLocation() failed");
+
+                    // Ensure NVAR source location is as expected
+                    Assert.AreEqual(location, nvarLocation, "NVAR source location not expected value");
+
+                    // Destroy NVAR sound source
+                    status = NVAR.DestroySource(source);
+                    Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroySource() failed");
                 }
                 TestHelper.DestroyNVARContext(context);
             }
