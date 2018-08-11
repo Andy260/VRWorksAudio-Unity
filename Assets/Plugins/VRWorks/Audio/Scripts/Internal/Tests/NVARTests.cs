@@ -2,6 +2,8 @@
 using System;
 using System.IO;
 using System.Threading;
+using UnityEditor;
+using UnityEditor.TestTools;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
@@ -14,6 +16,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetStatusDescription() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetStatusDescription()
         {
             // Status enumeration to get the description string from NVAR
@@ -33,6 +36,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetStatusString() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetStatusString()
         {
             // Status enumeration to get the string name representation from NVAR
@@ -57,6 +61,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetVersion() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetVersion()
         {
             // Get NVAR version
@@ -70,6 +75,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetOutputFormatChannels() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetOutputFormatChannels()
         {
             NVAR.OutputFormat outputFormat = NVAR.OutputFormat.OutputFormatStereoHeadphones;
@@ -88,6 +94,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarIntialize() and nvarFinalize() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void InitializeAndFinalize()
         {
             // Test initialising NVAR
@@ -102,6 +109,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetInitializeFlags() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetInitializeFlags()
         {
             int initialiseFlags = 0;
@@ -123,6 +131,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetDeviceCount() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetDeviceCount()
         {
             TestHelper.InitialiseNVAR(0);
@@ -142,6 +151,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetDevices() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetDevices()
         {
             TestHelper.InitialiseNVAR(0);
@@ -169,6 +179,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetDeviceName() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetDeviceName()
         {
             TestHelper.InitialiseNVAR(0);
@@ -198,6 +209,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetPreferedDevice() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetPreferedDevice()
         {
             TestHelper.InitialiseNVAR(0);
@@ -222,6 +234,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarCreate() and nvarDestroy() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void CreateAndDestroy()
         {
             TestHelper.InitialiseNVAR(0);
@@ -262,6 +275,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarCommitGeometry() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void CommitGeometry()
         {
             TestHelper.InitialiseNVAR(0);
@@ -280,6 +294,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarEventRecord() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void EventRecord()
         {
             TestHelper.InitialiseNVAR(0);
@@ -318,13 +333,24 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarCommitGeometry() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void ExportOBJs()
         {
             TestHelper.InitialiseNVAR(0);
             {
                 NVAR.Context context = TestHelper.CreateNVARContext();
                 {
-                    string filePath = "ExportOBJ_Test";
+                    const string filePath = "ExportOBJ_Test";
+
+                    // Destroy files created from a previous test, if any
+                    if (File.Exists(filePath + ".obj"))
+                    {
+                        File.Delete(filePath + ".obj");
+                    }
+                    if (File.Exists(filePath + ".mtl"))
+                    {
+                        File.Delete(filePath + ".mtl");
+                    }
 
                     // Create NVAR OBJ export file
                     NVAR.Status status = NVAR.ExportOBJs(context, filePath);
@@ -355,6 +381,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetDecayFactor() and nvarSetDecayFactor() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetDecayFactor()
         {
             TestHelper.InitialiseNVAR(0);
@@ -386,6 +413,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetDeviceNum() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetDeviceNum()
         {
             TestHelper.InitialiseNVAR(0);
@@ -425,6 +453,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetListenerLocation() and nvarSetListenerLocation() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetListenerLocation()
         {
             TestHelper.InitialiseNVAR(0);
@@ -456,6 +485,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetListenerOrientation() and nvarSetListenerOrientation() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetListenerOrientation()
         {
             TestHelper.InitialiseNVAR(0);
@@ -490,6 +520,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetOutputFormat() and nvarSetOutputFormat() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetOutputFormat()
         {
             TestHelper.InitialiseNVAR(0);
@@ -523,6 +554,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetReverbLength() and nvarSetReverbLength() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetReverbLength()
         {
             TestHelper.InitialiseNVAR(0);
@@ -551,6 +583,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetSampleRate() and nvarSetSampleRate() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetSampleRate()
         {
             TestHelper.InitialiseNVAR(0);
@@ -579,6 +612,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetUnitLength() and nvarSetUnitLength() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetUnitLength()
         {
             TestHelper.InitialiseNVAR(0);
@@ -607,6 +641,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarSynchronize() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void Synchronize()
         {
             TestHelper.InitialiseNVAR(0);
@@ -624,6 +659,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarTraceAudio() in the managed API with a_traceDoneEvent NULL")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void TraceAudio()
         {
             TestHelper.InitialiseNVAR(0);
@@ -642,6 +678,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarTraceAudio() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void TraceAudioFull()
         {
             TestHelper.InitialiseNVAR(0);
@@ -685,6 +722,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarCreateMaterial() and nvarDestroyMaterial() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void CreateAndDestroyMaterial()
         {
             TestHelper.InitialiseNVAR(0);
@@ -708,6 +746,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarCreatePredefinedMaterial() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void CreatePredefinedMaterial()
         {
             TestHelper.InitialiseNVAR(0);
@@ -731,6 +770,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetMaterialReflection() and nvarSetMaterialReflection() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetMaterialReflection()
         {
             TestHelper.InitialiseNVAR(0);
@@ -767,6 +807,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetMaterialTransmission() and nvarSetMaterialTransmission() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetMaterialTransmission()
         {
             TestHelper.InitialiseNVAR(0);
@@ -808,6 +849,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarCreateMaterial() and nvarDestroyMaterial() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void CreateAndDestroyMesh()
         {
             TestHelper.InitialiseNVAR(0);
@@ -846,6 +888,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetMeshMaterial() and nvarSetMeshMaterial() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetMeshMaterial()
         {
             TestHelper.InitialiseNVAR(0);
@@ -903,6 +946,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetMeshTransform() and nvarSetMeshTransform() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetMeshTransform()
         {
             TestHelper.InitialiseNVAR(0);
@@ -966,6 +1010,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarCreateSource() and nvarDestroySource() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void CreateAndDestroySource()
         {
             TestHelper.InitialiseNVAR(0);
@@ -989,6 +1034,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarApplySourceFilters() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void ApplySourceFilters()
         {
             TestHelper.InitialiseNVAR(0);
@@ -1043,6 +1089,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetSourceFilterArraySize() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetSourceFilterArraySize()
         {
             TestHelper.InitialiseNVAR(0);
@@ -1065,6 +1112,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetSourceFilters() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetSourceFilters()
         {
             TestHelper.InitialiseNVAR(0);
@@ -1111,6 +1159,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetSourceDirectGain() and nvarSetSourceDirectGain() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetSourceDirectGain()
         {
             TestHelper.InitialiseNVAR(0);
@@ -1147,6 +1196,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetSourceIndirectGain() and nvarSetSourceIndirectGain() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetSourceIndirectGain()
         {
             TestHelper.InitialiseNVAR(0);
@@ -1183,6 +1233,7 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
         [Test]
         [Category("Managed Binding API Test")]
         [Description("Tests nvarGetSourceLocation() and nvarSetSourceLocation() in the managed API")]
+        [RequirePlatformSupport(BuildTarget.StandaloneWindows64)]
         public void GetAndSetSourceLocation()
         {
             TestHelper.InitialiseNVAR(0);
