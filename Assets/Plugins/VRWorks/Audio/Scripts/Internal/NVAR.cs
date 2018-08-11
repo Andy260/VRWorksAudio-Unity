@@ -496,1082 +496,6 @@ namespace NVIDIA.VRWorksAudio.Internal
 
         #endregion
 
-        #region Internal Functions
-
-        /// <summary>
-        /// Updates the processing engine with changes to the geometry
-        /// </summary>
-        /// <remarks>
-        /// Updates the scene's acoustic geometry. Because this
-        /// update can be an expensive operation,
-        /// this function provides a mechanism to update the geometry 
-        /// outside of calling <see cref="TraceAudio(Context, IntPtr)"/>. If the geometry has changed
-        /// and this function has not been not called before a call to <see cref="TraceAudio(Context, IntPtr)"/>,
-        /// the geometry changes will be automatically updated in the call
-        /// to <see cref="TraceAudio(Context, IntPtr)"/>.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: nvar is not a valid context.</para>
-        ///     <para><see cref="Status.NotReady"/>: Audio trace is in progress.</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarCommitGeometry")]
-        private static extern Status Internal_CommitGeometry(IntPtr a_nvar);
-
-        /// <summary>
-        /// Returns an identifier string for a device
-        /// </summary>
-        /// <remarks>
-        /// Returns a NULL-terminated ASCII string identifying the device whose CUDA ordinal
-        /// is passed as device in name. <see cref="a_length"/> specifies the size of the device
-        /// array, that is, maximum <see cref="a_length"/> of the string that may be returned.
-        /// </remarks>
-        /// <param name="a_deviceID">CUDA device ordinal of the requested device</param>
-        /// <param name="a_name">Returned identifier string for the device</param>
-        /// <param name="a_length">Maximum length of string to store in name</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="deviceID"/> is not the CUDA ordinal of a device 
-        ///           that supports NVAR, name is NULL, or <see cref="a_length"/> is 0.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetDeviceName", CharSet = CharSet.Ansi)]
-        private static extern Status Internal_GetDeviceName(int a_deviceID, StringBuilder a_name, int a_length);
-
-        /// <summary>
-        /// Gets the list of NVAR supported CUDA device ordinals
-        /// </summary>
-        /// <remarks>
-        /// Returns an array of the CUDA ordinals (CUDA device numbers) of
-        /// devices in this system which NVAR can use. On input, a_deviceCount
-        /// should contain the length of the array passed in a_devices. On return,
-        /// a_deviceCount will contain the number of valid entries in a_devices.
-        /// </remarks>
-        /// <param name="a_devices">Pointer an array of integers where device array will be written.</param>
-        /// <param name="a_deviceCount">Pointer to provide the size of a_devices array and to return copied device count</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_devices"/> or <see cref="a_deviceCount"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetDevices")]
-        private static extern Status Internal_GetDevices(int[] a_devices, ref int a_deviceCount);
-
-        /// <summary>
-        /// Gets the preferred NVAR device
-        /// </summary>
-        /// <remarks>
-        /// Returns CUDA ordinal of the preferred NVAR device. If a valid <see cref="a_DXGIAdapter"/>
-        /// is passed, NVAR will prefer to use a supported not in use for
-        /// graphical rendering. If more than one supported device is available,
-        /// the first device not being used for graphics is returned.
-        /// If there is only one supported device, its CUDA ordinal is returned.
-        /// </remarks>
-        /// <param name="a_DXGIAdapter">(Optional) Pointer to the IDXGIAdapter corresponding to the rendering device.</param>
-        /// <param name="a_device">On return, the CUDA ordinal of the preferred device for NVAR.</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_DXGIAdapter"/> is not a valid DGXIAdaptor or 
-        ///           <see cref="a_device"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetPreferedDevice")]
-        private static extern Status Internal_GetPreferedDevice(IntPtr a_DXGIAdapter, out int a_device);
-
-        /// <summary>
-        /// Gets the string description of a status code
-        /// </summary>
-        /// /// <remarks>
-        /// This function sets <see cref="a_str"/> to the address of a
-        /// NULL-terminated string containing a description of the 
-        /// status code enumeration status.
-        /// </remarks>
-        /// <param name="a_str">Returned address of the string pointer</param>
-        /// <param name="status">Status code of the description string</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_str"/> is NULL or <see cref="status"/> is an invalid value.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetStatusDescription")]
-        private static extern Status Internal_GetStatusDescription(out IntPtr a_str, Status a_status);
-
-        /// <summary>
-        /// Gets the string representation of a status code enum
-        /// </summary>
-        /// <remarks>
-        /// This function sets <see cref="a_str"/> to the address of a
-        /// NULL-terminated string representation of the name of the
-        /// status code enumeration status.
-        /// </remarks>
-        /// <param name="a_str">Returned address of the string pointer</param>
-        /// <param name="a_status">The status code of the enum string</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_str"/> is NULL or <see cref="a_status"/> is an invalid value.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetStatusString")]
-        private static extern Status Internal_GetStatusString(out IntPtr a_str, Status a_status);
-
-        /// <summary>
-        /// Creates an NVAR processing context
-        /// </summary>
-        /// <remarks>
-        /// Creates and initialises an NVAR processing context. If no
-        /// name string is passed, a default context will be created. If the
-        /// context to be created already exists, the existing handle
-        /// will be returned to the caller the context's internal reference count
-        /// will be incremented when the function call succeeds. Only one unnamed
-        /// and one named context are simultaneously supported.
-        /// </remarks>
-        /// <param name="a_nvar">Returned NVAR processing context</param>
-        /// <param name="a_name">The name of the context, which may be up to <see cref="CreateNameLength"/> characters</param>
-        /// <param name="a_nameLength">The number of characters in name</param>
-        /// <param name="a_preset">NVAR compute pre-set that controls performance of the acoustic trace.</param>
-        /// <param name="a_deviceNum">Pointer to the CUDA device number; if NULL, the device 0 will be used</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called</para>
-        ///     <para><see cref="Status.NotSupported"/>: The context has already been created
-        ///           with a different parameter set (for example the CUDA device num).
-        ///           Mismatched parameters will be returned through parameters
-        ///           marked as [optional, in, out] with the values of the existing 
-        ///           NVAR processing context. The contents of <see cref="a_nvar"/> will be will be invalid.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarCreate")]
-        private static extern Status Internal_Create(out IntPtr a_nvar, string a_name, IntPtr a_nameLength, EffectPreset a_preset, ref int a_deviceNum);
-
-        /// <summary>
-        /// Destroys an NVAR processing context
-        /// </summary>
-        /// <remarks>
-        /// Decrements the reference count on an NVAR
-        /// context and, if the reference count becomes zero, destroys
-        /// the processing context and frees any associated resources.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context to be destroyed</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarDestroy")]
-        private static extern Status Internal_Destroy(IntPtr a_nvar);
-
-        /// <summary>
-        /// Gets the decay factor
-        /// </summary>
-        /// <remarks>
-        /// Returns the re-verb decay factor from the NVAR processing context
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_decayFactor">Returned decay factor</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_decayFactor"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetDecayFactor")]
-        private static extern Status Internal_GetDecayFactor(IntPtr a_nvar, out float a_decayFactor);
-
-        /// <summary>
-        /// Sets the decay factor
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// Sets the decay factor for sources in this processing context. The
-        /// decay factor controls the longevity of energy from reflections
-        /// according to the equation(1-decayFactor)^N
-        /// where N is the number of traces.A decay factor of 0.8, for example,
-        /// results in a path's contributed energy being reducing to &lt; 1% within 21
-        /// traces from the trace when the path is originally discovered.
-        /// </para>
-        /// 
-        /// <para>
-        /// The default decay factor is <see cref="DefaultDecayFactor"/> if
-        /// this function is not called.
-        /// </para>
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_decayFactor">Decay factor. Must be in the range (0.0, 1.0].</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="nvarInitialize"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_decayFactor"/> is not in the range
-        ///           (0.0f, 1.0f).</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetDecayFactor")]
-        private static extern Status Internal_SetDecayFactor(IntPtr a_nvar, float a_decayFactor);
-
-        /// <summary>
-        /// Gets the CUDA device number from the NVAR processing context
-        /// </summary>
-        /// <remarks>
-        /// Returns the CUDA device number specified to create the NVAR processing context.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_deviceNum">Returned device number</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_deviceNum"/> is NULL</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetDeviceNum")]
-        private static extern Status Internal_GetDeviceNum(IntPtr a_nvar, out int a_deviceNum);
-
-        /// <summary>
-        /// Gets the location of the listener
-        /// </summary>
-        /// <remarks>
-        /// Returns the location of the listener in the scene.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_location">Returned location of the listener</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_location"/> is NULL</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetListenerLocation")]
-        private static extern Status Internal_GetListenerLocation(IntPtr a_nvar, out Float3 a_location);
-
-        /// <summary>
-        /// Sets the location of the listener
-        /// </summary>
-        /// <remarks>
-        /// Sets the location of the listener in the scene. 
-        /// The default orientation of the listener is (0.0f,
-        /// 0.0f, -1.0f) for the forward vector and(0.0f, 1.0f, 0.0f)
-        /// for the up vector. These defaults do not imply a preferred 
-        /// coordinate system.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_location">The location of the listener</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context.</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetListenerLocation")]
-        private static extern Status Internal_SetListenerLocation(IntPtr a_nvar, Float3 a_location);
-
-        /// <summary>
-        /// Gets the output format
-        /// </summary>
-        /// <remarks>
-        /// Returns the output format of filters or filtered audio from the NVAR processing context.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_outputFormat">Returned output format</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_outputFormat"/> is NULL.</para>
-        ///     <para></para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetOutputFormat")]
-        private static extern Status Internal_GetOutputFormat(IntPtr a_nvar, out OutputFormat a_outputFormat);
-
-        /// <summary>
-        /// Sets the output format
-        /// </summary>
-        /// <remarks>
-        /// Sets the output format of filters or filtered audio
-        /// from the NVAR processing context.If this function is not called,
-        /// the default output format
-        /// <see cref="OutputFormat.OutputFormatStereoHeadphones"/> is used.
-        /// This function can be expensive because of reallocation
-        /// of internal buffers; it should ideally called only once,
-        /// before any sources have been created.
-        /// Audio continuity is not guaranteed across calls to this function.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_outputFormat">The output format</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_outputFormat"/> 
-        ///           is not a valid output format.</para>
-        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetOutputFormat")]
-        private static extern Status Internal_SetOutputFormat(IntPtr a_nvar, OutputFormat a_outputFormat);
-
-        /// <summary>
-        /// Gets the re-verb length
-        /// </summary>
-        /// <remarks>
-        /// Returns the re-verb length, in seconds, from the NVAR processing context.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_reverbLength">Returned re-verb length</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_reverbLength"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetReverbLength")]
-        private static extern Status Internal_GetReverbLength(IntPtr a_nvar, out float a_reverbLength);
-
-        /// <summary>
-        /// Sets the re-verb length
-        /// </summary>
-        /// <remarks>
-        /// Sets the re-verb length, in seconds, in the NVAR
-        /// processing context.If this function is not called, the
-        /// default re-verb length given by <see cref="DefaultReverbLength"/>
-        /// is used. This function can be expensive because of reallocation
-        /// of internal buffers. It should ideally called once before any
-        /// sources exist. Audio continuity is not guaranteed across
-        /// calls to this function. The API does not restrict the re-verb length
-        /// to enable non-real-time uses. Real-time applications should take care
-        /// in setting this value.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_reverbLength">Re-verb length, in seconds. Must be in the range (0.0, Inf).</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_reverbLength"/> is not in the range(0.0f, inf).</para>
-        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetReverbLength")]
-        private static extern Status Internal_SetReverbLength(IntPtr a_nvar, float a_reverbLength);
-
-        /// <summary>
-        /// Gets the sample rate
-        /// </summary>
-        /// <remarks>
-        /// Returns the sample rate in samples per second of sound sources in the NVAR processing context.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_sampleRate">Returned sample rate in samples per second</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_sampleRate"/> is NULL</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetSampleRate")]
-        private static extern Status Internal_GetSampleRate(IntPtr a_nvar, out int a_sampleRate);
-
-        /// <summary>
-        /// Sets the sample rate
-        /// </summary>
-        /// <remarks>
-        /// Sets the sample rate in samples per second of sound
-        /// sources in the NVAR processing context.The default
-        /// sample rate if this function is not called is
-        /// <see cref="DefaultSampleRate"/> hertz. This function can be 
-        /// expensive because of reallocation
-        /// of internal buffers. It should ideally called once before any
-        /// sources exist.Audio continuity is not guaranteed across
-        /// calls to this function.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_sampleRate">Sample rate. Must be in the range (<see cref="MinSampleRate"/>, inf).</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.NVAR_STATUS_INVALID_VALUE"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_sampleRate"/> 
-        ///     is not in the range [<see cref="MinSampleRate"/>, inf].</para>
-        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetSampleRate")]
-        private static extern Status Internal_SetSampleRate(IntPtr a_nvar, int a_sampleRate);
-
-        /// <summary>
-        /// Gets the units per meter from the NVAR processing context
-        /// </summary>
-        /// <remarks>
-        /// Returns the units per meter from the NVAR
-        /// processing context. The default unit length per meter ratio
-        /// is <see cref="DefaultUnitLengthPerMeterRatio"/>.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_ratio">Returned unit length per meter ratio</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_ratio"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetUnitLength")]
-        private static extern Status Internal_GetUnitLength(IntPtr a_nvar, out float a_ratio);
-
-        /// <summary>
-        /// Sets the unit length per meter ratio of the NVAR processing context
-        /// </summary>
-        /// <remarks>
-        /// Sets the unit length per meter ratio of the
-        /// NVAR processing context. If each unit in the geometry passed
-        /// to the NVAR processing context is specified in centimetres, for example,
-        /// a unit length per meter of 0.01 units per meter gives the processing
-        /// context the appropriate scale. If this function is not called,
-        /// the default unit length per meter ratio
-        /// <see cref="DefaultUnitLengthPerMeterRatio"/> is used.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_ratio">The new unit length per meter ratio. Must be in the range(0.0, Inf).</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_ratio"/> is not in the range (0.0f, inf).</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetUnitLength")]
-        private static extern Status Internal_SetUnitLength(IntPtr a_nvar, float a_ratio);
-
-        /// <summary>
-        /// Wait for nvar command stream to idle
-        /// </summary>
-        /// <remarks>
-        /// Blocks the calling thread until all activity in the 
-        /// asynchronous command queue has been completed. Can be used
-        /// to ensure synchronisation between the NVAR processing context
-        /// and the calling thread. 
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSynchronize")]
-        private static extern Status Internal_Synchronize(IntPtr a_nvar);
-
-        /// <summary>
-        /// Traces the audio paths between the listener and the sound sources
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// Schedule an acoustic trace. Acoustic traces are the main 
-        /// computation of NVAR that trace paths between all sources and 
-        /// the listener in the specified geometry. The result of an acoustic
-        /// trace is a set of filters.
-        /// </para>
-        /// 
-        /// <para>
-        /// <see cref="TraceAudio(Context, Action)"/> returns once the trace has been added to the
-        /// asynchronous command queue. The trace will be run asynchronously to the
-        /// calling thread. If <see cref="a_traceDoneEvent"/> is not NULL, the Windows event passed
-        /// in that argument will be signalled by a call to SetEvent()
-        /// once the trace scheduled by this call is completed.
-        /// </para>
-        /// 
-        /// <para>
-        /// Because traceAudio commands are enqueued, applications should use
-        /// the <see cref="a_traceDoneEvent"/> or <see cref="Synchronize(Context)"/> to
-        /// ensure that previously started traces are completed before issuing
-        /// new traces. If <see cref="nvarTraceAudio"/> is called faster  
-        /// than traces complete, a backlog of traces will accumulate
-        /// in the command queue.
-        /// </para>
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_traceDoneEvent">Windows event object that will be signalled when tracing is complete.</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context.</para>
-        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarTraceAudio")]
-        private static extern Status Internal_TraceAudio(IntPtr a_nvar, IntPtr a_traceDoneEvent);
-
-        /// <summary>
-        /// Records an event in nvar command queue.
-        /// </summary>
-        /// <remarks>
-        /// Adds an event to the asynchronous command queue and triggers
-        /// the specified windows event once all commands in the queue prior
-        /// to the event have been executed.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_event">The event which is signalled</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_event"/> is not a valid Windows event.</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarEventRecord")]
-        private static extern Status Internal_EventRecord(IntPtr a_nvar, IntPtr a_event);
-
-        /// <summary>
-        /// Exports NVAR geometry to Wavefront .obj file.
-        /// </summary>
-        /// <remarks>
-        /// Dumps the current state of the scene geometry in the NVAR context
-        /// to a Wavefront.obj file with a generic.mtl material file.
-        /// This function involves disk I/O and is heavyweight as a result.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_objFileBaseName">The base file name of the generated Wavefront .obj and .mtl 
-        /// files to which the NVAR geometry will be exported.</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_objFileBaseName"/> is NULL.</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarExportOBJs", CharSet = CharSet.Ansi)]
-        private static extern Status Internal_ExportOBJs(IntPtr a_nvar, string a_objFileBaseName);
-
-        /// <summary>
-        /// Gets the orientation of the listener
-        /// </summary>
-        /// <remarks>
-        /// Returns the orientation of the listener in the scene.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_forward">Returned forward orientation of the listener</param>
-        /// <param name="a_up">Returned up orientation of the listener</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> or <see cref="a_up"/> is NULL.</para>
-        /// </returns>
-        /// <summary>
-        /// Gets the orientation of the listener
-        /// </summary>
-        /// <remarks>
-        /// Returns the orientation of the listener in the scene.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_forward">Returned forward orientation of the listener</param>
-        /// <param name="a_up">Returned up orientation of the listener</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> or <see cref="a_up"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetListenerOrientation")]
-        private static extern Status Internal_GetListenerOrientation(IntPtr a_nvar, out Float3 a_forward, out Float3 a_up);
-
-        /// <summary>
-        /// Sets the orientation of the listener
-        /// </summary>
-        /// <remarks>
-        /// Sets the forward and up orthogonal orientation
-        /// vectors of the listener in the scene. The forward vector is
-        /// directed away from the listener in the direction the listener
-        /// is facing. The up vector is directed away from the top of
-        /// listener. The specified vectors must be orthogonal.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_forward">The forward orientation of the listener</param>
-        /// <param name="a_up">The up orientation of the listener</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> and 
-        ///           <see cref="a_up"/> are not orthogonal.</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetListenerOrientation")]
-        private static extern Status Internal_SetListenerOrientation(IntPtr a_nvar, Float3 a_forward, Float3 a_up);
-
-        /// <summary>
-        /// Creates an acoustic material
-        /// </summary>
-        /// <remarks>
-        /// Creates an acoustic material with default properties.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_material">Returned material handle</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_material"/> is NULL.</para>
-        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarCreateMaterial")]
-        private static extern Status Internal_CreateMaterial(IntPtr a_nvar, out IntPtr a_material);
-
-        /// <summary>
-        /// Creates a predefined acoustic material
-        /// </summary>
-        /// <remarks>
-        /// This function creates an acoustic material with predefined acoustic properties.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_material">Returned material object</param>
-        /// <param name="a_predefinedMaterial">Enumerated predefined material value</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, <see cref="a_material"/> is NULL, 
-        ///           or <see cref="a_predefinedMaterial"/> is not in the range (<see cref="PredefinedMaterial.Absorber"/>.</para>
-        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarCreatePredefinedMaterial")]
-        private static extern Status Internal_CreatePredefinedMaterial(IntPtr a_nvar, out IntPtr a_material, PredefinedMaterial a_predefinedMaterial);
-
-        /// <summary>
-        /// Destroys the specified acoustic material
-        /// </summary>
-        /// <remarks>
-        /// Destroys the specified acoustic material. The material should not be currently attached to a mesh object.
-        /// </remarks>
-        /// <param name="a_material">The material object</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material object.</para>
-        ///     <para><see cref="Status.NotReady"/>: The material is still attached to a mesh object.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarDestroyMaterial")]
-        private static extern Status Internal_DestroyMaterial(IntPtr a_material);
-
-        /// <summary>
-        /// Gets the reflection coefficient of the acoustic material
-        /// </summary>
-        /// <remarks>
-        /// This function gets the reflection coefficient of the acoustic material.
-        /// </remarks>
-        /// <param name="a_material">The material object</param>
-        /// <param name="a_reflection">Returned reflection coefficient</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_reflection"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetMaterialReflection")]
-        private static extern Status Internal_GetMaterialReflection(IntPtr a_material, out float a_reflection);
-
-        /// <summary>
-        /// Sets the reflection coefficient of the acoustic material
-        /// </summary>
-        /// <remarks>
-        /// This function sets the reflection coefficient of the acoustic
-        /// material.Physically, this value should be in the range 
-        /// [0, 1], and the reflection coefficient and transmission
-        /// coefficients should have a sum &lt;= 1.0. The API does not 
-        /// enforce this restriction
-        /// </remarks>
-        /// <param name="a_material">The material object</param>
-        /// <param name="a_reflection">Reflection coefficient</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_reflection"/> is not in the range[0.0, 1.0].</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetMaterialReflection")]
-        private static extern Status Internal_SetMaterialReflection(IntPtr a_material, float a_reflection);
-
-        /// <summary>
-        /// Gets the transmission coefficient of the acoustic material
-        /// </summary>
-        /// <remarks>
-        /// Returns the transmission coefficient of the acoustic material.
-        /// </remarks>
-        /// <param name="a_material">The material object</param>
-        /// <param name="a_transmission">Returned transmission coefficient</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_transmission"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetMaterialTransmission")]
-        private static extern Status Internal_GetMaterialTransmission(IntPtr a_material, out float a_transmission);
-
-        /// <summary>
-        /// Sets the transmission coefficient of the acoustic material
-        /// </summary>
-        /// <remarks>
-        /// This function sets the transmission coefficient of the acoustic
-        /// material.Physically, this value should be in the range 
-        /// [0, 1], and the reflection coefficient and transmission
-        /// coefficients should have a sum &lt;= 1.0. The API does not 
-        /// enforce this restriction.
-        /// </remarks>
-        /// <param name="a_material">The material object</param>
-        /// <param name="transmission">Transmission coefficient</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_transmission"/> is not in the range[0.0, 1.0].</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetMaterialTransmission")]
-        private static extern Status Internal_SetMaterialTransmission(IntPtr a_material, float a_transmission);
-
-        /// <summary>
-        /// Creates an acoustic mesh
-        /// </summary>
-        /// <remarks>
-        /// Creates an acoustic mesh from the vertices, faces, and acoustic
-        /// material. The function scales and places the mesh in the scene
-        /// using the specified transformation matrix. Changes will be incorporated
-        /// into the scene when the next call to::nvarCommitGeometry
-        /// or <see cref="nvarTraceAudio"/> is executed.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_mesh">Returned mesh object</param>
-        /// <param name="a_transform">The transform of the mesh</param>
-        /// <param name="a_vertices">The array of vertices</param>
-        /// <param name="a_numVertices">The number of <see cref="a_vertices"/></param>
-        /// <param name="a_faces">The array of faces</param>
-        /// <param name="a_numFaces">The number of <see cref="a_faces"/></param>
-        /// <param name="a_material">The material applied to the mesh</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: Possible causes: <see cref="a_nvar"/> is not a valid context;
-        ///           <see cref="a_mesh"/>, <see cref="a_transform"/>, <see cref="a_vertices"/>, or <see cref="a_faces"/>
-        ///           is NULL; the number of <see cref="a_numVertices"/> is not valid; the number of <see cref="a_numFaces"/>
-        ///           is not valid; or the <see cref="a_material"/> value is not valid.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarCreateMesh")]
-        private static extern Status Internal_CreateMesh(IntPtr a_nvar, out IntPtr a_mesh, Matrix4x4 a_transform, Float3[] a_vertices, int a_numVertices,
-                                                               int[] a_faces, int a_numFaces, IntPtr a_material);
-
-        /// <summary>
-        /// Destroys the specified acoustic mesh
-        /// </summary>
-        /// <remarks>
-        /// Destroys the specified acoustic mesh and
-        /// releases any associated resources. The mesh will be removed from
-        /// the scene when the next call to <see cref="CommitGeometry(Context)"/> or
-        /// <see cref="TraceAudio(Context, IntPtr)"/> is executed.
-        /// </remarks>
-        /// <param name="a_mesh">Valid mesh handle</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh object.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarDestroyMesh")]
-        private static extern Status Internal_DestroyMesh(IntPtr a_mesh);
-
-        /// <summary>
-        /// Gets the acoustic material of the mesh
-        /// </summary>
-        /// <remarks>
-        /// Returns the acoustic material applied to the specified mesh.
-        /// </remarks>
-        /// <param name="a_mesh">Valid mesh handle</param>
-        /// <param name="a_material">Returned material object</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_material"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetMeshMaterial")]
-        private static extern Status Internal_GetMeshMaterial(IntPtr a_mesh, out IntPtr a_material);
-
-        /// <summary>
-        /// Sets the acoustic material of the mesh
-        /// </summary>
-        /// <remarks>
-        /// Sets acoustic material of the specified mesh.
-        /// </remarks>
-        /// <param name="a_mesh">Valid mesh handle</param>
-        /// <param name="a_material">Valid material handle</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_material"/> is not a valid material.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetMeshMaterial")]
-        private static extern Status Internal_SetMeshMaterial(IntPtr a_mesh, IntPtr a_material);
-
-        /// <summary>
-        /// Gets the transform of the mesh
-        /// </summary>
-        /// <remarks>
-        /// Returns the transformation matrix of the specified mesh.
-        /// </remarks>
-        /// <param name="a_mesh">Valid mesh handle</param>
-        /// <param name="a_transform">Returned transformation matrix</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_transform"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetMeshTransform")]
-        private static extern Status Internal_GetMeshTransform(IntPtr a_mesh, out Matrix4x4 a_transform);
-
-        /// <summary>
-        /// Sets the transform of the mesh
-        /// </summary>
-        /// <remarks>
-        /// Sets transformation matrix for the specified mesh object.
-        /// </remarks>
-        /// <param name="a_mesh">Valid mesh handle</param>
-        /// <param name="a_transform">The transformation matrix</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetMeshTransform")]
-        private static extern Status Internal_SetMeshTransform(IntPtr a_mesh, Matrix4x4 a_transform);
-
-        /// <summary>
-        /// Create a sound source
-        /// </summary>
-        /// <remarks>
-        /// Creates a sound source in the scene.  Sound sources are added
-        /// at the origin and should be fully initialised (for example, moved to their location,
-        /// all other parameters set) before the next call to <see cref="TraceAudio(Context, IntPtr)"/>.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_effect">The effect applied per source</param>
-        /// <param name="a_source">Returned sound source</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_source"/> is NULL.</para>
-        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarCreateSource")]
-        private static extern Status Internal_CreateSource(IntPtr a_nvar, EffectPreset a_effect, out IntPtr a_source);
-
-        /// <summary>
-        /// Destroys the specified sound source
-        /// </summary>
-        /// <remarks>
-        /// Destroys the specified sound source and releases any associated resources.
-        /// </remarks>
-        /// <param name="a_source">The sound source</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarDestroySource")]
-        private static extern Status Internal_DestroySource(IntPtr a_source);
-
-        /// <summary>
-        /// Gets the gain applied to the direct path sound.
-        /// </summary>
-        /// <remarks>
-        /// Returns the direct path gain of the specified sound source.
-        /// </remarks>
-        /// <param name="a_source">The sound source</param>
-        /// <param name="a_gain">Returned direct path gain</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source or <see cref="pMix"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetSourceDirectPathGain")]
-        private static extern Status Internal_GetSourceDirectPathGain(IntPtr a_source, out float a_gain);
-
-        /// <summary>
-        /// Sets the gain applied to the direct path
-        /// </summary>
-        /// <remarks>
-        /// Sets the gain applied to the direct path audio in the output
-        /// filter for the specified sound source. Direct path audio is audio
-        /// which follows an unoccluded straight line between the source and
-        /// listener.
-        /// 
-        /// A value of 0.0 has the effect
-        /// of disabling the direct sound path. A value of 1.0 incorporates
-        /// the direct sound path along with the indirect sound paths. A value
-        /// greater than 1.0 will amplify the sound on the direct path between
-        /// the source and listener. Valid range is [0.0, Inf).
-        /// 
-        /// If this function is not called, a default value of 
-        /// <see cref="DefaultDirectPathGain"/> is used for the source.
-        /// </remarks>
-        /// <param name="a_source">The sound source</param>
-        /// <param name="a_gain">Direct path gain</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a
-        ///           valid sound source or <see cref="a_gain"/> is not in the range
-        ///           [0.0, Inf).</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetSourceDirectPathGain")]
-        private static extern Status Internal_SetSourceDirectPathGain(IntPtr a_source, float a_gain);
-
-        /// <summary>
-        /// Gets the indirect path gain of the sound source
-        /// </summary>
-        /// <remarks>
-        /// Returns the indirect path gain for the specified sound source.
-        /// If not set earlier with <see cref="SetSourceIndirectPathGain(Source, float)"/> this returns the
-        /// default indirect path gain.
-        /// </remarks>
-        /// <param name="a_source">The sound source</param>
-        /// <param name="a_gain">Returned contribution factor for the sound source</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source or <see cref="pContribution"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetSourceIndirectPathGain")]
-        private static extern Status Internal_GetSourceIndirectPathGain(IntPtr a_source, out float a_gain);
-
-        /// <summary>
-        /// Sets the gain applied to indirect paths
-        /// </summary>
-        /// <remarks>
-        /// Sets the gain applied to indirect paths between the specified sound source
-        /// and the listener. An indirect path is a path which has at least one reflection
-        /// or transmission point between the source and listener.
-        /// 
-        /// A value greater than 1.0 has will amplify sound along indirect paths. A value
-        /// of less than 1.0 will attenuate indirect path audio, that is, re-verb. A value of
-        /// zero has the effect of disabling re-verb for the specified source entirely. 
-        /// Valid range is [0.0, Inf).
-        /// 
-        /// If this function is not called for a source, the default value
-        /// <see cref="DefaultIndirectPathGain"/> is used.
-        /// </remarks>
-        /// <param name="a_source">The sound source</param>
-        /// <param name="a_gain">The contribution factor for the sound source</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a
-        ///           valid sound source or contribution is not in the range[0.0, Inf).</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetSourceIndirectPathGain")]
-        private static extern Status Internal_SetSourceIndirectPathGain(IntPtr a_source, float a_gain);
-
-        /// <summary>
-        /// Gets the sound source location
-        /// </summary>
-        /// <remarks>
-        /// Returns the location of the sound source in the scene.
-        /// </remarks>
-        /// <param name="a_source">The sound source</param>
-        /// <param name="a_location">Returned location of the sound source</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source or <see cref="a_location"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetSourceLocation")]
-        private static extern Status Internal_GetSourceLocation(IntPtr a_source, out Float3 a_location);
-
-        /// <summary>
-        /// Sets the sound source location
-        /// </summary>
-        /// <remarks>
-        /// Sets the location of the sound source in the scene.
-        /// </remarks>
-        /// <param name="a_source">The sound source</param>
-        /// <param name="a_location">The location of the sound source</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="nvarInitialize"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source.</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarSetSourceLocation")]
-        private static extern Status Internal_SetSourceLocation(IntPtr a_source, Float3 a_location);
-
-        /// <summary>
-        /// Gets the filter array size
-        /// </summary>
-        /// <remarks>
-        /// Returns the size in bytes of the filter array for the <see cref="GetSourceFilters(Source, float[])"/> function call.
-        /// </remarks>
-        /// <param name="a_nvar">The NVAR processing context</param>
-        /// <param name="a_filterArraySize">Returned filter array size in bytes</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_filterArraySize"/> is NULL.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetSourceFilterArraySize")]
-        private static extern Status Internal_GetSourceFilterArraySize(IntPtr a_nvar, out int a_filterArraySize);
-
-        /// <summary>
-        /// Gets the filters for the sound source
-        /// </summary>
-        /// <remarks>
-        /// This function returns an array of filters that were generated
-        /// by the call to <see cref="TraceAudio(Context, IntPtr)"/>. The filter array must be
-        /// at least filterArraySize bytes in size. This size is returned by the
-        /// function <see cref="GetSourceFilterArraySize(Context, out int)"/>.
-        /// 
-        /// The number of elements in the filter array is as follows:
-        /// <code>
-        /// numFilterArrayElements = filterArraySize / sizeof(float);
-        /// </code>
-        /// 
-        /// The number of elements in each filter is as follows:
-        /// <code>
-        /// int numElementsPerChannel = numFilterArrayElements /
-        /// umChannels;
-        /// </code>
-        /// 
-        /// The pointer to the filter array for each channel is as follows:
-        /// <code>
-        /// float* ptr = &filterArray[numFiltersPerChannel * channel];
-        /// </code>
-        /// </remarks>
-        /// <param name="a_source">The sound source</param>
-        /// <param name="a_filterArray">Returned array of filters</param>
-        /// <param name="a_arraySize">Size of filter array (Only used within C# binding for marshalling of filter array)</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid context or <see cref="a_filterArray"/> is NULL.</para>
-        ///     <para><see cref="Status.NotReady"/>: The tracer geometry is not ready or the audio trace is in progress.</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarGetSourceFilters")]
-        private static extern Status Internal_GetSourceFilters(IntPtr a_source, IntPtr a_filtersArray);
-
-        /// <summary>
-        /// Applies the sound source filters to the input data
-        /// </summary>
-        /// <remarks>
-        /// This function applies the filters generated by
-        /// <see cref="TraceAudio(Context, IntPtr)"/> to the audio samples contained in the
-        /// input data buffer. The input buffer format is a single 
-        /// audio channel of floating-point PCM data.
-        /// <see cref="a_in"/> is an array of at least <see cref="a_numSamples"/> floating point values.
-        /// 
-        /// <see cref="a_out"/> is an array of pointers to output buffers, one buffer for
-        /// each output channel. The number of pointers should be
-        /// nvar_t::channels and the buffer for each channel must
-        /// be at least sizeof(float) * <see cref="a_numSamples"/> bytes
-        /// in size.
-        /// 
-        /// To prevent internal reallocations, the value of <see cref="a_numSamples"/>
-        /// should not be changed from call to call.The function
-        /// may be called with
-        /// <see cref="a_out"/> and <see cref="a_in"/> both NULL to allocate buffers internally for
-        /// <see cref="a_numSamples"/>. Calling to allocate before using is an optimisation
-        /// that is not required for correct operation.
-        /// </remarks>
-        /// <param name="a_source">The sound source</param>
-        /// <param name="a_out">Returned audio data for each channel</param>
-        /// <param name="a_in">The input audio data buffer to process</param>
-        /// <param name="numSamples">The number of audio samples to process
-        /// from the input buffer to the output buffer. <see cref="a_numSamples"/>
-        /// must be greater than 0.</param>
-        /// <returns>
-        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
-        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
-        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid
-        ///           context, or a buffer pointer in <see cref="a_out"/> is NULL, or
-        ///           <see cref="InputBuffer"/> is NULL, or <see cref="a_numSamples"/> is not in
-        ///           the range(0, <see cref="Int32.MaxValue"/>].</para>
-        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
-        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
-        /// </returns>
-        [DllImport("nvar", EntryPoint = "nvarApplySourceFilters")]
-        private static extern Status Internal_ApplySourceFilters(IntPtr a_source, IntPtr[] a_out, 
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] float[] a_in, int a_numSamples);
-
-        #endregion
-
         #region Error Handling
 
         /// <summary>
@@ -1600,14 +524,14 @@ namespace NVIDIA.VRWorksAudio.Internal
         }
 
         /// <summary>
-        /// Gets the string representation of a status code enum
+        /// Gets the string representation of a status code enumeration
         /// </summary>
         /// <remarks>
         /// This function sets <see cref="a_str"/> to the string representation 
         /// of the name of the status code enumeration status.
         /// </remarks>
         /// <param name="a_str">Returned string name of the status code</param>
-        /// <param name="a_status">The status code of the enum string</param>
+        /// <param name="a_status">The status code of the enumeration string</param>
         /// <returns>
         ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
         ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_str"/> is NULL or <see cref="a_status"/> is an invalid value.</para>
@@ -1623,6 +547,44 @@ namespace NVIDIA.VRWorksAudio.Internal
 
             return status;
         }
+
+        #region Internal Functions
+
+        /// <summary>
+        /// Gets the string description of a status code
+        /// </summary>
+        /// /// <remarks>
+        /// This function sets <see cref="a_str"/> to the address of a
+        /// NULL-terminated string containing a description of the 
+        /// status code enumeration status.
+        /// </remarks>
+        /// <param name="a_str">Returned address of the string pointer</param>
+        /// <param name="status">Status code of the description string</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_str"/> is NULL or <see cref="status"/> is an invalid value.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetStatusDescription")]
+        private static extern Status Internal_GetStatusDescription(out IntPtr a_str, Status a_status);
+
+        /// <summary>
+        /// Gets the string representation of a status code enumeration
+        /// </summary>
+        /// <remarks>
+        /// This function sets <see cref="a_str"/> to the address of a
+        /// NULL-terminated string representation of the name of the
+        /// status code enumeration status.
+        /// </remarks>
+        /// <param name="a_str">Returned address of the string pointer</param>
+        /// <param name="a_status">The status code of the enumeration string</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_str"/> is NULL or <see cref="a_status"/> is an invalid value.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetStatusString")]
+        private static extern Status Internal_GetStatusString(out IntPtr a_str, Status a_status);
+
+        #endregion
 
         #endregion
 
@@ -1797,6 +759,70 @@ namespace NVIDIA.VRWorksAudio.Internal
         [DllImport("nvar", EntryPoint = "nvarInitialize")]
         internal static extern Status Initialize(int a_flags);
 
+        #region Internal Functions
+
+        /// <summary>
+        /// Returns an identifier string for a device
+        /// </summary>
+        /// <remarks>
+        /// Returns a NULL-terminated ASCII string identifying the device whose CUDA ordinal
+        /// is passed as device in name. <see cref="a_length"/> specifies the size of the device
+        /// array, that is, maximum <see cref="a_length"/> of the string that may be returned.
+        /// </remarks>
+        /// <param name="a_deviceID">CUDA device ordinal of the requested device</param>
+        /// <param name="a_name">Returned identifier string for the device</param>
+        /// <param name="a_length">Maximum length of string to store in name</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="deviceID"/> is not the CUDA ordinal of a device 
+        ///           that supports NVAR, name is NULL, or <see cref="a_length"/> is 0.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetDeviceName", CharSet = CharSet.Ansi)]
+        private static extern Status Internal_GetDeviceName(int a_deviceID, StringBuilder a_name, int a_length);
+
+        /// <summary>
+        /// Gets the list of NVAR supported CUDA device ordinals
+        /// </summary>
+        /// <remarks>
+        /// Returns an array of the CUDA ordinals (CUDA device numbers) of
+        /// devices in this system which NVAR can use. On input, a_deviceCount
+        /// should contain the length of the array passed in a_devices. On return,
+        /// a_deviceCount will contain the number of valid entries in a_devices.
+        /// </remarks>
+        /// <param name="a_devices">Pointer an array of integers where device array will be written.</param>
+        /// <param name="a_deviceCount">Pointer to provide the size of a_devices array and to return copied device count</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_devices"/> or <see cref="a_deviceCount"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetDevices")]
+        private static extern Status Internal_GetDevices(int[] a_devices, ref int a_deviceCount);
+
+        /// <summary>
+        /// Gets the preferred NVAR device
+        /// </summary>
+        /// <remarks>
+        /// Returns CUDA ordinal of the preferred NVAR device. If a valid <see cref="a_DXGIAdapter"/>
+        /// is passed, NVAR will prefer to use a supported not in use for
+        /// graphical rendering. If more than one supported device is available,
+        /// the first device not being used for graphics is returned.
+        /// If there is only one supported device, its CUDA ordinal is returned.
+        /// </remarks>
+        /// <param name="a_DXGIAdapter">(Optional) Pointer to the IDXGIAdapter corresponding to the rendering device.</param>
+        /// <param name="a_device">On return, the CUDA ordinal of the preferred device for NVAR.</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_DXGIAdapter"/> is not a valid DGXIAdaptor or 
+        ///           <see cref="a_device"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetPreferedDevice")]
+        private static extern Status Internal_GetPreferedDevice(IntPtr a_DXGIAdapter, out int a_device);
+
+        #endregion
+
         #endregion
 
         #region Processing Context Functions
@@ -1845,7 +871,7 @@ namespace NVIDIA.VRWorksAudio.Internal
         ///     <para><see cref="Status.Success"/>: No error has occurred</para>
         ///     <para><see cref="Status.NotInitialized"/>: <see cref="nvarInitialize"/> has not been called</para>
         ///     <para><see cref="Status.NotSupported"/>: The context has already been created
-        ///           with a different parameter set (for example the CUDA device num).
+        ///           with a different parameter set (for example the CUDA device number).
         ///           Mismatched parameters will be returned through parameters
         ///           marked as [optional, in, out] with the values of the existing 
         ///           NVAR processing context. The contents of <see cref="a_nvar"/> will be will be invalid.</para>
@@ -2400,6 +1426,494 @@ namespace NVIDIA.VRWorksAudio.Internal
             return Internal_TraceAudio(a_nvar.pointer, a_traceDoneEvent);
         }
 
+        #region Internal Functions
+
+        /// <summary>
+        /// Updates the processing engine with changes to the geometry
+        /// </summary>
+        /// <remarks>
+        /// Updates the scene's acoustic geometry. Because this
+        /// update can be an expensive operation,
+        /// this function provides a mechanism to update the geometry 
+        /// outside of calling <see cref="TraceAudio(Context, IntPtr)"/>. If the geometry has changed
+        /// and this function has not been not called before a call to <see cref="TraceAudio(Context, IntPtr)"/>,
+        /// the geometry changes will be automatically updated in the call
+        /// to <see cref="TraceAudio(Context, IntPtr)"/>.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: nvar is not a valid context.</para>
+        ///     <para><see cref="Status.NotReady"/>: Audio trace is in progress.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarCommitGeometry")]
+        private static extern Status Internal_CommitGeometry(IntPtr a_nvar);
+
+        /// <summary>
+        /// Creates an NVAR processing context
+        /// </summary>
+        /// <remarks>
+        /// Creates and initialises an NVAR processing context. If no
+        /// name string is passed, a default context will be created. If the
+        /// context to be created already exists, the existing handle
+        /// will be returned to the caller the context's internal reference count
+        /// will be incremented when the function call succeeds. Only one unnamed
+        /// and one named context are simultaneously supported.
+        /// </remarks>
+        /// <param name="a_nvar">Returned NVAR processing context</param>
+        /// <param name="a_name">The name of the context, which may be up to <see cref="CreateNameLength"/> characters</param>
+        /// <param name="a_nameLength">The number of characters in name</param>
+        /// <param name="a_preset">NVAR compute pre-set that controls performance of the acoustic trace.</param>
+        /// <param name="a_deviceNum">Pointer to the CUDA device number; if NULL, the device 0 will be used</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called</para>
+        ///     <para><see cref="Status.NotSupported"/>: The context has already been created
+        ///           with a different parameter set (for example the CUDA device number).
+        ///           Mismatched parameters will be returned through parameters
+        ///           marked as [optional, in, out] with the values of the existing 
+        ///           NVAR processing context. The contents of <see cref="a_nvar"/> will be will be invalid.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarCreate")]
+        private static extern Status Internal_Create(out IntPtr a_nvar, string a_name, IntPtr a_nameLength, EffectPreset a_preset, ref int a_deviceNum);
+
+        /// <summary>
+        /// Destroys an NVAR processing context
+        /// </summary>
+        /// <remarks>
+        /// Decrements the reference count on an NVAR
+        /// context and, if the reference count becomes zero, destroys
+        /// the processing context and frees any associated resources.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context to be destroyed</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarDestroy")]
+        private static extern Status Internal_Destroy(IntPtr a_nvar);
+
+        /// <summary>
+        /// Records an event in nvar command queue.
+        /// </summary>
+        /// <remarks>
+        /// Adds an event to the asynchronous command queue and triggers
+        /// the specified windows event once all commands in the queue prior
+        /// to the event have been executed.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_event">The event which is signalled</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_event"/> is not a valid Windows event.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarEventRecord")]
+        private static extern Status Internal_EventRecord(IntPtr a_nvar, IntPtr a_event);
+
+        /// <summary>
+        /// Exports NVAR geometry to Wavefront .obj file.
+        /// </summary>
+        /// <remarks>
+        /// Dumps the current state of the scene geometry in the NVAR context
+        /// to a Wavefront.obj file with a generic.mtl material file.
+        /// This function involves disk I/O and is heavyweight as a result.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_objFileBaseName">The base file name of the generated Wavefront .obj and .mtl 
+        /// files to which the NVAR geometry will be exported.</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_objFileBaseName"/> is NULL.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarExportOBJs", CharSet = CharSet.Ansi)]
+        private static extern Status Internal_ExportOBJs(IntPtr a_nvar, string a_objFileBaseName);
+
+        /// <summary>
+        /// Gets the decay factor
+        /// </summary>
+        /// <remarks>
+        /// Returns the re-verb decay factor from the NVAR processing context
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_decayFactor">Returned decay factor</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_decayFactor"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetDecayFactor")]
+        private static extern Status Internal_GetDecayFactor(IntPtr a_nvar, out float a_decayFactor);
+
+        /// <summary>
+        /// Sets the decay factor
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Sets the decay factor for sources in this processing context. The
+        /// decay factor controls the longevity of energy from reflections
+        /// according to the equation(1-decayFactor)^N
+        /// where N is the number of traces.A decay factor of 0.8, for example,
+        /// results in a path's contributed energy being reducing to &lt; 1% within 21
+        /// traces from the trace when the path is originally discovered.
+        /// </para>
+        /// 
+        /// <para>
+        /// The default decay factor is <see cref="DefaultDecayFactor"/> if
+        /// this function is not called.
+        /// </para>
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_decayFactor">Decay factor. Must be in the range (0.0, 1.0].</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="nvarInitialize"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_decayFactor"/> is not in the range
+        ///           (0.0f, 1.0f).</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetDecayFactor")]
+        private static extern Status Internal_SetDecayFactor(IntPtr a_nvar, float a_decayFactor);
+
+        /// <summary>
+        /// Gets the CUDA device number from the NVAR processing context
+        /// </summary>
+        /// <remarks>
+        /// Returns the CUDA device number specified to create the NVAR processing context.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_deviceNum">Returned device number</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_deviceNum"/> is NULL</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetDeviceNum")]
+        private static extern Status Internal_GetDeviceNum(IntPtr a_nvar, out int a_deviceNum);
+
+        /// <summary>
+        /// Gets the location of the listener
+        /// </summary>
+        /// <remarks>
+        /// Returns the location of the listener in the scene.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_location">Returned location of the listener</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_location"/> is NULL</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetListenerLocation")]
+        private static extern Status Internal_GetListenerLocation(IntPtr a_nvar, out Float3 a_location);
+
+        /// <summary>
+        /// Sets the location of the listener
+        /// </summary>
+        /// <remarks>
+        /// Sets the location of the listener in the scene. 
+        /// The default orientation of the listener is (0.0f,
+        /// 0.0f, -1.0f) for the forward vector and(0.0f, 1.0f, 0.0f)
+        /// for the up vector. These defaults do not imply a preferred 
+        /// coordinate system.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_location">The location of the listener</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetListenerLocation")]
+        private static extern Status Internal_SetListenerLocation(IntPtr a_nvar, Float3 a_location);
+
+        /// <summary>
+        /// Gets the orientation of the listener
+        /// </summary>
+        /// <remarks>
+        /// Returns the orientation of the listener in the scene.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_forward">Returned forward orientation of the listener</param>
+        /// <param name="a_up">Returned up orientation of the listener</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> or <see cref="a_up"/> is NULL.</para>
+        /// </returns>
+        /// <summary>
+        /// Gets the orientation of the listener
+        /// </summary>
+        /// <remarks>
+        /// Returns the orientation of the listener in the scene.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_forward">Returned forward orientation of the listener</param>
+        /// <param name="a_up">Returned up orientation of the listener</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> or <see cref="a_up"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetListenerOrientation")]
+        private static extern Status Internal_GetListenerOrientation(IntPtr a_nvar, out Float3 a_forward, out Float3 a_up);
+
+        /// <summary>
+        /// Sets the orientation of the listener
+        /// </summary>
+        /// <remarks>
+        /// Sets the forward and up orthogonal orientation
+        /// vectors of the listener in the scene. The forward vector is
+        /// directed away from the listener in the direction the listener
+        /// is facing. The up vector is directed away from the top of
+        /// listener. The specified vectors must be orthogonal.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_forward">The forward orientation of the listener</param>
+        /// <param name="a_up">The up orientation of the listener</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred.</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, or <see cref="a_forward"/> and 
+        ///           <see cref="a_up"/> are not orthogonal.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetListenerOrientation")]
+        private static extern Status Internal_SetListenerOrientation(IntPtr a_nvar, Float3 a_forward, Float3 a_up);
+
+        /// <summary>
+        /// Gets the output format
+        /// </summary>
+        /// <remarks>
+        /// Returns the output format of filters or filtered audio from the NVAR processing context.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_outputFormat">Returned output format</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_outputFormat"/> is NULL.</para>
+        ///     <para></para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetOutputFormat")]
+        private static extern Status Internal_GetOutputFormat(IntPtr a_nvar, out OutputFormat a_outputFormat);
+
+        /// <summary>
+        /// Sets the output format
+        /// </summary>
+        /// <remarks>
+        /// Sets the output format of filters or filtered audio
+        /// from the NVAR processing context.If this function is not called,
+        /// the default output format
+        /// <see cref="OutputFormat.OutputFormatStereoHeadphones"/> is used.
+        /// This function can be expensive because of reallocation
+        /// of internal buffers; it should ideally called only once,
+        /// before any sources have been created.
+        /// Audio continuity is not guaranteed across calls to this function.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_outputFormat">The output format</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_outputFormat"/> 
+        ///           is not a valid output format.</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetOutputFormat")]
+        private static extern Status Internal_SetOutputFormat(IntPtr a_nvar, OutputFormat a_outputFormat);
+
+        /// <summary>
+        /// Gets the re-verb length
+        /// </summary>
+        /// <remarks>
+        /// Returns the re-verb length, in seconds, from the NVAR processing context.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_reverbLength">Returned re-verb length</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_reverbLength"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetReverbLength")]
+        private static extern Status Internal_GetReverbLength(IntPtr a_nvar, out float a_reverbLength);
+
+        /// <summary>
+        /// Sets the re-verb length
+        /// </summary>
+        /// <remarks>
+        /// Sets the re-verb length, in seconds, in the NVAR
+        /// processing context.If this function is not called, the
+        /// default re-verb length given by <see cref="DefaultReverbLength"/>
+        /// is used. This function can be expensive because of reallocation
+        /// of internal buffers. It should ideally called once before any
+        /// sources exist. Audio continuity is not guaranteed across
+        /// calls to this function. The API does not restrict the re-verb length
+        /// to enable non-real-time uses. Real-time applications should take care
+        /// in setting this value.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_reverbLength">Re-verb length, in seconds. Must be in the range (0.0, Inf).</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_reverbLength"/> is not in the range(0.0f, inf).</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetReverbLength")]
+        private static extern Status Internal_SetReverbLength(IntPtr a_nvar, float a_reverbLength);
+
+        /// <summary>
+        /// Gets the sample rate
+        /// </summary>
+        /// <remarks>
+        /// Returns the sample rate in samples per second of sound sources in the NVAR processing context.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_sampleRate">Returned sample rate in samples per second</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_sampleRate"/> is NULL</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetSampleRate")]
+        private static extern Status Internal_GetSampleRate(IntPtr a_nvar, out int a_sampleRate);
+
+        /// <summary>
+        /// Sets the sample rate
+        /// </summary>
+        /// <remarks>
+        /// Sets the sample rate in samples per second of sound
+        /// sources in the NVAR processing context.The default
+        /// sample rate if this function is not called is
+        /// <see cref="DefaultSampleRate"/> hertz. This function can be 
+        /// expensive because of reallocation
+        /// of internal buffers. It should ideally called once before any
+        /// sources exist.Audio continuity is not guaranteed across
+        /// calls to this function.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_sampleRate">Sample rate. Must be in the range (<see cref="MinSampleRate"/>, inf).</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.NVAR_STATUS_INVALID_VALUE"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_sampleRate"/> 
+        ///     is not in the range [<see cref="MinSampleRate"/>, inf].</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetSampleRate")]
+        private static extern Status Internal_SetSampleRate(IntPtr a_nvar, int a_sampleRate);
+
+        /// <summary>
+        /// Gets the units per meter from the NVAR processing context
+        /// </summary>
+        /// <remarks>
+        /// Returns the units per meter from the NVAR
+        /// processing context. The default unit length per meter ratio
+        /// is <see cref="DefaultUnitLengthPerMeterRatio"/>.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_ratio">Returned unit length per meter ratio</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_ratio"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetUnitLength")]
+        private static extern Status Internal_GetUnitLength(IntPtr a_nvar, out float a_ratio);
+
+        /// <summary>
+        /// Sets the unit length per meter ratio of the NVAR processing context
+        /// </summary>
+        /// <remarks>
+        /// Sets the unit length per meter ratio of the
+        /// NVAR processing context. If each unit in the geometry passed
+        /// to the NVAR processing context is specified in centimetres, for example,
+        /// a unit length per meter of 0.01 units per meter gives the processing
+        /// context the appropriate scale. If this function is not called,
+        /// the default unit length per meter ratio
+        /// <see cref="DefaultUnitLengthPerMeterRatio"/> is used.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_ratio">The new unit length per meter ratio. Must be in the range(0.0, Inf).</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_ratio"/> is not in the range (0.0f, inf).</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetUnitLength")]
+        private static extern Status Internal_SetUnitLength(IntPtr a_nvar, float a_ratio);
+
+        /// <summary>
+        /// Wait for nvar command stream to idle
+        /// </summary>
+        /// <remarks>
+        /// Blocks the calling thread until all activity in the 
+        /// asynchronous command queue has been completed. Can be used
+        /// to ensure synchronisation between the NVAR processing context
+        /// and the calling thread. 
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSynchronize")]
+        private static extern Status Internal_Synchronize(IntPtr a_nvar);
+
+        /// <summary>
+        /// Traces the audio paths between the listener and the sound sources
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Schedule an acoustic trace. Acoustic traces are the main 
+        /// computation of NVAR that trace paths between all sources and 
+        /// the listener in the specified geometry. The result of an acoustic
+        /// trace is a set of filters.
+        /// </para>
+        /// 
+        /// <para>
+        /// <see cref="TraceAudio(Context, Action)"/> returns once the trace has been added to the
+        /// asynchronous command queue. The trace will be run asynchronously to the
+        /// calling thread. If <see cref="a_traceDoneEvent"/> is not NULL, the Windows event passed
+        /// in that argument will be signalled by a call to SetEvent()
+        /// once the trace scheduled by this call is completed.
+        /// </para>
+        /// 
+        /// <para>
+        /// Because traceAudio commands are enqueued, applications should use
+        /// the <see cref="a_traceDoneEvent"/> or <see cref="Synchronize(Context)"/> to
+        /// ensure that previously started traces are completed before issuing
+        /// new traces. If <see cref="nvarTraceAudio"/> is called faster  
+        /// than traces complete, a backlog of traces will accumulate
+        /// in the command queue.
+        /// </para>
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_traceDoneEvent">Windows event object that will be signalled when tracing is complete.</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context.</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarTraceAudio")]
+        private static extern Status Internal_TraceAudio(IntPtr a_nvar, IntPtr a_traceDoneEvent);
+
+        #endregion
+
         #endregion
 
         #region Acoustic Material Functions
@@ -2553,6 +2067,134 @@ namespace NVIDIA.VRWorksAudio.Internal
             return Internal_SetMaterialTransmission(a_material.pointer, a_transmission);
         }
 
+        #region Internal Functions
+
+        /// <summary>
+        /// Creates an acoustic material
+        /// </summary>
+        /// <remarks>
+        /// Creates an acoustic material with default properties.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_material">Returned material handle</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_material"/> is NULL.</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarCreateMaterial")]
+        private static extern Status Internal_CreateMaterial(IntPtr a_nvar, out IntPtr a_material);
+
+        /// <summary>
+        /// Creates a predefined acoustic material
+        /// </summary>
+        /// <remarks>
+        /// This function creates an acoustic material with predefined acoustic properties.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_material">Returned material object</param>
+        /// <param name="a_predefinedMaterial">Enumerated predefined material value</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context, <see cref="a_material"/> is NULL, 
+        ///           or <see cref="a_predefinedMaterial"/> is not in the range (<see cref="PredefinedMaterial.Absorber"/>.</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarCreatePredefinedMaterial")]
+        private static extern Status Internal_CreatePredefinedMaterial(IntPtr a_nvar, out IntPtr a_material, PredefinedMaterial a_predefinedMaterial);
+
+        /// <summary>
+        /// Destroys the specified acoustic material
+        /// </summary>
+        /// <remarks>
+        /// Destroys the specified acoustic material. The material should not be currently attached to a mesh object.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material object.</para>
+        ///     <para><see cref="Status.NotReady"/>: The material is still attached to a mesh object.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarDestroyMaterial")]
+        private static extern Status Internal_DestroyMaterial(IntPtr a_material);
+
+        /// <summary>
+        /// Gets the reflection coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// This function gets the reflection coefficient of the acoustic material.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="a_reflection">Returned reflection coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_reflection"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetMaterialReflection")]
+        private static extern Status Internal_GetMaterialReflection(IntPtr a_material, out float a_reflection);
+
+        /// <summary>
+        /// Sets the reflection coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// This function sets the reflection coefficient of the acoustic
+        /// material.Physically, this value should be in the range 
+        /// [0, 1], and the reflection coefficient and transmission
+        /// coefficients should have a sum &lt;= 1.0. The API does not 
+        /// enforce this restriction
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="a_reflection">Reflection coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_reflection"/> is not in the range[0.0, 1.0].</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetMaterialReflection")]
+        private static extern Status Internal_SetMaterialReflection(IntPtr a_material, float a_reflection);
+
+        /// <summary>
+        /// Gets the transmission coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// Returns the transmission coefficient of the acoustic material.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="a_transmission">Returned transmission coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_transmission"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetMaterialTransmission")]
+        private static extern Status Internal_GetMaterialTransmission(IntPtr a_material, out float a_transmission);
+
+        /// <summary>
+        /// Sets the transmission coefficient of the acoustic material
+        /// </summary>
+        /// <remarks>
+        /// This function sets the transmission coefficient of the acoustic
+        /// material.Physically, this value should be in the range 
+        /// [0, 1], and the reflection coefficient and transmission
+        /// coefficients should have a sum &lt;= 1.0. The API does not 
+        /// enforce this restriction.
+        /// </remarks>
+        /// <param name="a_material">The material object</param>
+        /// <param name="transmission">Transmission coefficient</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_material"/> is not a valid material or <see cref="a_transmission"/> is not in the range[0.0, 1.0].</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetMaterialTransmission")]
+        private static extern Status Internal_SetMaterialTransmission(IntPtr a_material, float a_transmission);
+
+        #endregion
+
         #endregion
 
         #region Acoustic Mesh Functions
@@ -2701,6 +2343,122 @@ namespace NVIDIA.VRWorksAudio.Internal
         {
             return Internal_SetMeshTransform(a_mesh.pointer, (Matrix4x4)a_transform);
         }
+
+        #region Internal Functions
+
+        /// <summary>
+        /// Creates an acoustic mesh
+        /// </summary>
+        /// <remarks>
+        /// Creates an acoustic mesh from the vertices, faces, and acoustic
+        /// material. The function scales and places the mesh in the scene
+        /// using the specified transformation matrix. Changes will be incorporated
+        /// into the scene when the next call to::nvarCommitGeometry
+        /// or <see cref="nvarTraceAudio"/> is executed.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_mesh">Returned mesh object</param>
+        /// <param name="a_transform">The transform of the mesh</param>
+        /// <param name="a_vertices">The array of vertices</param>
+        /// <param name="a_numVertices">The number of <see cref="a_vertices"/></param>
+        /// <param name="a_faces">The array of faces</param>
+        /// <param name="a_numFaces">The number of <see cref="a_faces"/></param>
+        /// <param name="a_material">The material applied to the mesh</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: Possible causes: <see cref="a_nvar"/> is not a valid context;
+        ///           <see cref="a_mesh"/>, <see cref="a_transform"/>, <see cref="a_vertices"/>, or <see cref="a_faces"/>
+        ///           is NULL; the number of <see cref="a_numVertices"/> is not valid; the number of <see cref="a_numFaces"/>
+        ///           is not valid; or the <see cref="a_material"/> value is not valid.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarCreateMesh")]
+        private static extern Status Internal_CreateMesh(IntPtr a_nvar, out IntPtr a_mesh, Matrix4x4 a_transform, Float3[] a_vertices, int a_numVertices,
+                                                               int[] a_faces, int a_numFaces, IntPtr a_material);
+
+        /// <summary>
+        /// Destroys the specified acoustic mesh
+        /// </summary>
+        /// <remarks>
+        /// Destroys the specified acoustic mesh and
+        /// releases any associated resources. The mesh will be removed from
+        /// the scene when the next call to <see cref="CommitGeometry(Context)"/> or
+        /// <see cref="TraceAudio(Context, IntPtr)"/> is executed.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh object.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarDestroyMesh")]
+        private static extern Status Internal_DestroyMesh(IntPtr a_mesh);
+
+        /// <summary>
+        /// Gets the acoustic material of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Returns the acoustic material applied to the specified mesh.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_material">Returned material object</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_material"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetMeshMaterial")]
+        private static extern Status Internal_GetMeshMaterial(IntPtr a_mesh, out IntPtr a_material);
+
+        /// <summary>
+        /// Sets the acoustic material of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Sets acoustic material of the specified mesh.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_material">Valid material handle</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_material"/> is not a valid material.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetMeshMaterial")]
+        private static extern Status Internal_SetMeshMaterial(IntPtr a_mesh, IntPtr a_material);
+
+        /// <summary>
+        /// Gets the transform of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Returns the transformation matrix of the specified mesh.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_transform">Returned transformation matrix</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh or <see cref="a_transform"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetMeshTransform")]
+        private static extern Status Internal_GetMeshTransform(IntPtr a_mesh, out Matrix4x4 a_transform);
+
+        /// <summary>
+        /// Sets the transform of the mesh
+        /// </summary>
+        /// <remarks>
+        /// Sets transformation matrix for the specified mesh object.
+        /// </remarks>
+        /// <param name="a_mesh">Valid mesh handle</param>
+        /// <param name="a_transform">The transformation matrix</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_mesh"/> is not a valid mesh.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetMeshTransform")]
+        private static extern Status Internal_SetMeshTransform(IntPtr a_mesh, Matrix4x4 a_transform);
+
+        #endregion
 
         #endregion
 
@@ -2893,6 +2651,7 @@ namespace NVIDIA.VRWorksAudio.Internal
         /// </returns>
         internal static Status GetSourceFilters(Context a_nvar, Source a_source, out float[] a_filterArray)
         {
+            // Get the array size for the source filters
             int filterArraySize;
             Status status = GetSourceFilterArraySize(a_nvar, out filterArraySize);
             if (status != Status.Success)
@@ -2901,12 +2660,14 @@ namespace NVIDIA.VRWorksAudio.Internal
                 return status;
             }
 
+            // Allocate the filter array and pin it so we may pass it to NVAR in unmanaged code
             a_filterArray               = new float[filterArraySize];
             GCHandle filterArrayHandle  = GCHandle.Alloc(a_filterArray, GCHandleType.Pinned);
             IntPtr filterArrayPtr       = filterArrayHandle.AddrOfPinnedObject();
 
             status = Internal_GetSourceFilters(a_source.pointer, filterArrayPtr);
 
+            // Unpin filter array and return status from NVAR
             filterArrayHandle.Free();
             return status;
         }
@@ -3073,6 +2834,268 @@ namespace NVIDIA.VRWorksAudio.Internal
         {
             return Internal_SetSourceLocation(a_source.pointer, (Float3)a_location);
         }
+
+        #region Internal Functions
+
+        /// <summary>
+        /// Create a sound source
+        /// </summary>
+        /// <remarks>
+        /// Creates a sound source in the scene.  Sound sources are added
+        /// at the origin and should be fully initialised (for example, moved to their location,
+        /// all other parameters set) before the next call to <see cref="TraceAudio(Context, IntPtr)"/>.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_effect">The effect applied per source</param>
+        /// <param name="a_source">Returned sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_source"/> is NULL.</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarCreateSource")]
+        private static extern Status Internal_CreateSource(IntPtr a_nvar, EffectPreset a_effect, out IntPtr a_source);
+
+        /// <summary>
+        /// Destroys the specified sound source
+        /// </summary>
+        /// <remarks>
+        /// Destroys the specified sound source and releases any associated resources.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarDestroySource")]
+        private static extern Status Internal_DestroySource(IntPtr a_source);
+
+        /// <summary>
+        /// Applies the sound source filters to the input data
+        /// </summary>
+        /// <remarks>
+        /// This function applies the filters generated by
+        /// <see cref="TraceAudio(Context, IntPtr)"/> to the audio samples contained in the
+        /// input data buffer. The input buffer format is a single 
+        /// audio channel of floating-point PCM data.
+        /// <see cref="a_in"/> is an array of at least <see cref="a_numSamples"/> floating point values.
+        /// 
+        /// <see cref="a_out"/> is an array of pointers to output buffers, one buffer for
+        /// each output channel. The number of pointers should be
+        /// nvar_t::channels and the buffer for each channel must
+        /// be at least sizeof(float) * <see cref="a_numSamples"/> bytes
+        /// in size.
+        /// 
+        /// To prevent internal reallocations, the value of <see cref="a_numSamples"/>
+        /// should not be changed from call to call.The function
+        /// may be called with
+        /// <see cref="a_out"/> and <see cref="a_in"/> both NULL to allocate buffers internally for
+        /// <see cref="a_numSamples"/>. Calling to allocate before using is an optimisation
+        /// that is not required for correct operation.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_out">Returned audio data for each channel</param>
+        /// <param name="a_in">The input audio data buffer to process</param>
+        /// <param name="numSamples">The number of audio samples to process
+        /// from the input buffer to the output buffer. <see cref="a_numSamples"/>
+        /// must be greater than 0.</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid
+        ///           context, or a buffer pointer in <see cref="a_out"/> is NULL, or
+        ///           <see cref="InputBuffer"/> is NULL, or <see cref="a_numSamples"/> is not in
+        ///           the range(0, <see cref="Int32.MaxValue"/>].</para>
+        ///     <para><see cref="Status.OutOfResources"/>: An internal allocation has failed.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarApplySourceFilters")]
+        private static extern Status Internal_ApplySourceFilters(IntPtr a_source, IntPtr[] a_out,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] float[] a_in, int a_numSamples);
+
+        /// <summary>
+        /// Gets the filters for the sound source
+        /// </summary>
+        /// <remarks>
+        /// This function returns an array of filters that were generated
+        /// by the call to <see cref="TraceAudio(Context, IntPtr)"/>. The filter array must be
+        /// at least filterArraySize bytes in size. This size is returned by the
+        /// function <see cref="GetSourceFilterArraySize(Context, out int)"/>.
+        /// 
+        /// The number of elements in the filter array is as follows:
+        /// <code>
+        /// numFilterArrayElements = filterArraySize / sizeof(float);
+        /// </code>
+        /// 
+        /// The number of elements in each filter is as follows:
+        /// <code>
+        /// int numElementsPerChannel = numFilterArrayElements /
+        /// umChannels;
+        /// </code>
+        /// 
+        /// The pointer to the filter array for each channel is as follows:
+        /// <code>
+        /// float* ptr = &filterArray[numFiltersPerChannel * channel];
+        /// </code>
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_filterArray">Returned array of filters</param>
+        /// <param name="a_arraySize">Size of filter array (Only used within C# binding for marshalling of filter array)</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid context or <see cref="a_filterArray"/> is NULL.</para>
+        ///     <para><see cref="Status.NotReady"/>: The tracer geometry is not ready or the audio trace is in progress.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetSourceFilters")]
+        private static extern Status Internal_GetSourceFilters(IntPtr a_source, IntPtr a_filtersArray);
+
+        /// <summary>
+        /// Gets the filter array size
+        /// </summary>
+        /// <remarks>
+        /// Returns the size in bytes of the filter array for the <see cref="GetSourceFilters(Source, float[])"/> function call.
+        /// </remarks>
+        /// <param name="a_nvar">The NVAR processing context</param>
+        /// <param name="a_filterArraySize">Returned filter array size in bytes</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_nvar"/> is not a valid context or <see cref="a_filterArraySize"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetSourceFilterArraySize")]
+        private static extern Status Internal_GetSourceFilterArraySize(IntPtr a_nvar, out int a_filterArraySize);
+
+        /// <summary>
+        /// Gets the gain applied to the direct path sound.
+        /// </summary>
+        /// <remarks>
+        /// Returns the direct path gain of the specified sound source.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">Returned direct path gain</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source or <see cref="pMix"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetSourceDirectPathGain")]
+        private static extern Status Internal_GetSourceDirectPathGain(IntPtr a_source, out float a_gain);
+
+        /// <summary>
+        /// Sets the gain applied to the direct path
+        /// </summary>
+        /// <remarks>
+        /// Sets the gain applied to the direct path audio in the output
+        /// filter for the specified sound source. Direct path audio is audio
+        /// which follows an unoccluded straight line between the source and
+        /// listener.
+        /// 
+        /// A value of 0.0 has the effect
+        /// of disabling the direct sound path. A value of 1.0 incorporates
+        /// the direct sound path along with the indirect sound paths. A value
+        /// greater than 1.0 will amplify the sound on the direct path between
+        /// the source and listener. Valid range is [0.0, Inf).
+        /// 
+        /// If this function is not called, a default value of 
+        /// <see cref="DefaultDirectPathGain"/> is used for the source.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">Direct path gain</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a
+        ///           valid sound source or <see cref="a_gain"/> is not in the range
+        ///           [0.0, Inf).</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetSourceDirectPathGain")]
+        private static extern Status Internal_SetSourceDirectPathGain(IntPtr a_source, float a_gain);
+
+        /// <summary>
+        /// Gets the indirect path gain of the sound source
+        /// </summary>
+        /// <remarks>
+        /// Returns the indirect path gain for the specified sound source.
+        /// If not set earlier with <see cref="SetSourceIndirectPathGain(Source, float)"/> this returns the
+        /// default indirect path gain.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">Returned contribution factor for the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source or <see cref="pContribution"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetSourceIndirectPathGain")]
+        private static extern Status Internal_GetSourceIndirectPathGain(IntPtr a_source, out float a_gain);
+
+        /// <summary>
+        /// Sets the gain applied to indirect paths
+        /// </summary>
+        /// <remarks>
+        /// Sets the gain applied to indirect paths between the specified sound source
+        /// and the listener. An indirect path is a path which has at least one reflection
+        /// or transmission point between the source and listener.
+        /// 
+        /// A value greater than 1.0 has will amplify sound along indirect paths. A value
+        /// of less than 1.0 will attenuate indirect path audio, that is, re-verb. A value of
+        /// zero has the effect of disabling re-verb for the specified source entirely. 
+        /// Valid range is [0.0, Inf).
+        /// 
+        /// If this function is not called for a source, the default value
+        /// <see cref="DefaultIndirectPathGain"/> is used.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_gain">The contribution factor for the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a
+        ///           valid sound source or contribution is not in the range[0.0, Inf).</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetSourceIndirectPathGain")]
+        private static extern Status Internal_SetSourceIndirectPathGain(IntPtr a_source, float a_gain);
+
+        /// <summary>
+        /// Gets the sound source location
+        /// </summary>
+        /// <remarks>
+        /// Returns the location of the sound source in the scene.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_location">Returned location of the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="Initialize(int)"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source or <see cref="a_location"/> is NULL.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarGetSourceLocation")]
+        private static extern Status Internal_GetSourceLocation(IntPtr a_source, out Float3 a_location);
+
+        /// <summary>
+        /// Sets the sound source location
+        /// </summary>
+        /// <remarks>
+        /// Sets the location of the sound source in the scene.
+        /// </remarks>
+        /// <param name="a_source">The sound source</param>
+        /// <param name="a_location">The location of the sound source</param>
+        /// <returns>
+        ///     <para><see cref="Status.Success"/>: No error has occurred</para>
+        ///     <para><see cref="Status.NotInitialized"/>: <see cref="nvarInitialize"/> has not been called.</para>
+        ///     <para><see cref="Status.InvalidValue"/>: <see cref="a_source"/> is not a valid sound source.</para>
+        ///     <para><see cref="Status.Error"/>: A generic error has occurred.</para>
+        /// </returns>
+        [DllImport("nvar", EntryPoint = "nvarSetSourceLocation")]
+        private static extern Status Internal_SetSourceLocation(IntPtr a_source, Float3 a_location);
+
+        #endregion
 
         #endregion
     }
