@@ -17,6 +17,11 @@
         /// </summary>
         public string name { get; }
 
+        /// <summary>
+        /// Is this device preferred by VRWorks Audio for processing?
+        /// </summary>
+        public bool isPreferred { get; }
+
         #endregion
 
         #region Constructors
@@ -27,10 +32,12 @@
         /// </summary>
         /// <param name="a_number">Device number</param>
         /// <param name="a_name">Device name</param>
-        internal CUDADevice(int a_number, string a_name)
+        /// <param name="a_isPreferred">Is this device preferred by VRWorks Audio for processing?</param>
+        internal CUDADevice(int a_number, string a_name, bool a_isPreferred)
         {
-            number  = a_number;
-            name    = a_name;
+            number      = a_number;
+            name        = a_name;
+            isPreferred = a_isPreferred;
         }
 
         #endregion

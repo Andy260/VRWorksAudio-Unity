@@ -14,13 +14,15 @@ namespace NVIDIA.VRWorksAudio.Tests
         {
             int deviceNumber    = 3;
             string deviceName   = "Test Device (Full Constructor Test)";
+            bool isPreferred    = true;
 
             // Construct new CUDADevice object
-            CUDADevice cudaDevice = new CUDADevice(deviceNumber, deviceName);
+            CUDADevice cudaDevice = new CUDADevice(deviceNumber, deviceName, isPreferred);
 
             // Ensure CUDADevice object has expected data
             Assert.AreEqual(deviceNumber, cudaDevice.number);
             Assert.AreEqual(deviceName, cudaDevice.name);
+            Assert.AreEqual(isPreferred, cudaDevice.isPreferred);
         }
 
         #endregion
@@ -34,9 +36,10 @@ namespace NVIDIA.VRWorksAudio.Tests
         {
             int deviceNumber    = 1;
             string deviceName   = "Test Device (Number Test)";
+            bool isPreferred    = false;
 
             // Construct new CUDADevice object
-            CUDADevice cudaDevice = new CUDADevice(deviceNumber, deviceName);
+            CUDADevice cudaDevice = new CUDADevice(deviceNumber, deviceName, isPreferred);
 
             // Ensure number property returns expected value
             Assert.AreEqual(deviceNumber, cudaDevice.number);
@@ -49,12 +52,29 @@ namespace NVIDIA.VRWorksAudio.Tests
         {
             int deviceNumber    = 0;
             string deviceName   = "Test Device (Name Test)";
+            bool isPreferred    = false;
 
             // Construct new CUDADevice object
-            CUDADevice cudaDevice = new CUDADevice(deviceNumber, deviceName);
+            CUDADevice cudaDevice = new CUDADevice(deviceNumber, deviceName, isPreferred);
 
             // Ensure name property returns expected value
             Assert.AreEqual(deviceName, cudaDevice.name);
+        }
+
+        [Test]
+        [Category("Property Test")]
+        [Description("Tests normal/expected usage of the 'isPreferred' property")]
+        public void IsPreferred()
+        {
+            int deviceNumber    = 0;
+            string deviceName   = "Test Device (IsPreferred Test)";
+            bool isPreferred    = true;
+
+            // Construct new CUDADevice object
+            CUDADevice cudaDevice = new CUDADevice(deviceNumber, deviceName, isPreferred);
+
+            // Ensure name property returns expected value
+            Assert.AreEqual(isPreferred, cudaDevice.isPreferred);
         }
 
         #endregion
