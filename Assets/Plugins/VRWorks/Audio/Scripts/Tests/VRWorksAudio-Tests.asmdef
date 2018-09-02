@@ -1,0 +1,15 @@
+{
+    "name": "VRWorksAudio-Tests",
+    "references": [
+        "VRWorks-Audio"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [
+        "Editor",
+        "WindowsStandalone64"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false
+}
