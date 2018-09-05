@@ -281,6 +281,21 @@ namespace NVIDIA.VRWorksAudio.Internal
             /// </summary>
             internal IntPtr pointer { get; set; }
 
+            /// <summary>
+            /// Is the native pointer null?
+            /// </summary>
+            /// <remarks>
+            /// Allows the user to check if this internal pointer is null.
+            /// But it provides no grantee that a non-null pointer points to a valid context.
+            /// </remarks>
+            internal bool isNull
+            {
+                get
+                {
+                    return pointer == IntPtr.Zero;
+                }
+            }
+
             #endregion
 
             #region Constructors
@@ -305,6 +320,21 @@ namespace NVIDIA.VRWorksAudio.Internal
             /// </summary>
             internal IntPtr pointer { get; private set; }
 
+            /// <summary>
+            /// Is the native pointer null? (Shorthand for this.pointer == IntPtr.Zero)
+            /// </summary>
+            /// <remarks>
+            /// Allows the user to check if this internal pointer is null.
+            /// But it provides no grantee that a non-null pointer points to a valid material.
+            /// </remarks>
+            internal bool isNull
+            {
+                get
+                {
+                    return pointer == IntPtr.Zero;
+                }
+            }
+
             #endregion
 
             #region Constructors
@@ -328,6 +358,21 @@ namespace NVIDIA.VRWorksAudio.Internal
             /// Internal pointer to NVAR acoustic mesh
             /// </summary>
             internal IntPtr pointer { get; set; }
+
+            /// <summary>
+            /// Is the native pointer null? (Shorthand for this.pointer == IntPtr.Zero)
+            /// </summary>
+            /// <remarks>
+            /// Allows the user to check if this internal pointer is null.
+            /// But it provides no grantee that a non-null pointer points to a valid mesh.
+            /// </remarks>
+            internal bool isNull
+            {
+                get
+                {
+                    return pointer == IntPtr.Zero;
+                }
+            }
 
             #endregion
 
@@ -357,6 +402,21 @@ namespace NVIDIA.VRWorksAudio.Internal
             /// NVAR context this audio source was created in
             /// </summary>
             internal Context context { get; private set; }
+
+            /// <summary>
+            /// Is the native pointer null? (Shorthand for this.pointer == IntPtr.Zero)
+            /// </summary>
+            /// <remarks>
+            /// Allows the user to check if this internal pointer is null.
+            /// But it provides no grantee that a non-null pointer points to a valid audio source.
+            /// </remarks>
+            internal bool isNull
+            {
+                get
+                {
+                    return pointer == IntPtr.Zero;
+                }
+            }
 
             #endregion
 

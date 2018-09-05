@@ -1,7 +1,7 @@
-﻿using NUnit.Framework;
-using System;
+﻿using System;
 using System.IO;
 using System.Threading;
+using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.TestTools;
 using UnityEngine;
@@ -1327,6 +1327,168 @@ namespace NVIDIA.VRWorksAudio.Internal.Tests
 
             // Ensure NVAR context was successfully destroyed
             Assert.AreEqual(NVAR.Status.Success, status, "Call to nvarDestroy() failed");
+        }
+
+        #endregion
+    }
+}
+
+namespace NVIDIA.VRWorksAudio.Internal.Tests.NestedTypes
+{
+    [TestFixture]
+    public sealed class ContextTests
+    {
+        #region Constructor Tests
+
+        [Test]
+        [Category("Constructor Test")]
+        [Description("Tests normal/expected usage of the full constructor")]
+        public void FullConstructor()
+        {
+            IntPtr pointer = new IntPtr(10);
+            NVAR.Context context = new NVAR.Context(pointer);
+
+            Assert.AreEqual(pointer, context.pointer);
+        }
+
+        #endregion
+
+        #region Property Tests
+
+        [Test]
+        [Category("Property Test")]
+        [Description("Tests normal/expected usage of property 'isNull'")]
+        public void IsNull()
+        {
+            NVAR.Context context = new NVAR.Context();
+
+            // Test property with what is considered to be a NULL pointer
+            context = new NVAR.Context(IntPtr.Zero);
+            Assert.IsTrue(context.isNull);
+
+            // Test property with what is considered to be a valid pointer
+            context = new NVAR.Context(new IntPtr(10));
+            Assert.IsFalse(context.isNull);
+        }
+
+        #endregion
+    }
+
+    [TestFixture]
+    public sealed class MaterialTests
+    {
+        #region Constructor Tests
+
+        [Test]
+        [Category("Constructor Test")]
+        [Description("Tests normal/expected usage of the full constructor")]
+        public void FullConstructor()
+        {
+            IntPtr pointer = new IntPtr(10);
+            NVAR.Material material = new NVAR.Material(pointer);
+
+            Assert.AreEqual(pointer, material.pointer);
+        }
+
+        #endregion
+
+        #region Property Tests
+
+        [Test]
+        [Category("Property Test")]
+        [Description("Tests normal/expected usage of property 'isNull'")]
+        public void IsNull()
+        {
+            NVAR.Material context = new NVAR.Material();
+
+            // Test property with what is considered to be a NULL pointer
+            context = new NVAR.Material(IntPtr.Zero);
+            Assert.IsTrue(context.isNull);
+
+            // Test property with what is considered to be a valid pointer
+            context = new NVAR.Material(new IntPtr(50));
+            Assert.IsFalse(context.isNull);
+        }
+
+        #endregion
+    }
+
+    [TestFixture]
+    public sealed class MeshTests
+    {
+        #region Constructor Tests
+
+        [Test]
+        [Category("Constructor Test")]
+        [Description("Tests normal/expected usage of the full constructor")]
+        public void FullConstructor()
+        {
+            IntPtr pointer = new IntPtr(10);
+            NVAR.Mesh mesh = new NVAR.Mesh(pointer);
+
+            Assert.AreEqual(pointer, mesh.pointer);
+        }
+
+        #endregion
+
+        #region Property Tests
+
+        [Test]
+        [Category("Property Test")]
+        [Description("Tests normal/expected usage of property 'isNull'")]
+        public void IsNull()
+        {
+            NVAR.Mesh mesh = new NVAR.Mesh();
+
+            // Test property with what is considered to be a NULL pointer
+            mesh = new NVAR.Mesh(IntPtr.Zero);
+            Assert.IsTrue(mesh.isNull);
+
+            // Test property with what is considered to be a valid pointer
+            mesh = new NVAR.Mesh(new IntPtr(10));
+            Assert.IsFalse(mesh.isNull);
+        }
+
+        #endregion
+    }
+
+    [TestFixture]
+    public sealed class SourceTests
+    {
+        #region Constructor Tests
+
+        [Test]
+        [Category("Constructor Test")]
+        [Description("Tests normal/expected usage of the full constructor")]
+        public void FullConstructor()
+        {
+            IntPtr pointer = new IntPtr(10);
+            NVAR.Context context = new NVAR.Context();
+            NVAR.Source source = new NVAR.Source(pointer, context);
+
+            Assert.AreEqual(pointer, source.pointer);
+            Assert.AreEqual(context, source.context);
+        }
+
+        #endregion
+
+        #region Property Tests
+
+        [Test]
+        [Category("Property Test")]
+        [Description("Tests normal/expected usage of property 'isNull'")]
+        public void IsNull()
+        {
+            NVAR.Context context    = new NVAR.Context();
+            NVAR.Source source      = new NVAR.Source();
+
+            // Test property with what is considered to be a NULL pointer
+            source = new NVAR.Source(IntPtr.Zero, context);
+            Assert.IsTrue(source.isNull);
+
+            // Test property with what is considered to be a valid pointer
+            source = new NVAR.Source(new IntPtr(10), context);
+            Assert.IsFalse(source.isNull);
         }
 
         #endregion
