@@ -1,16 +1,30 @@
-﻿namespace NVIDIA.VRWorksAudio
+﻿using System;
+using UnityEngine;
+
+namespace NVIDIA.VRWorksAudio
 {
     /// <summary>
     /// Handle to a CUDA device for use within VRWorks Audio
     /// </summary>
+    [Serializable]
     public sealed class CUDADevice
     {
+        // CUDA device number
+        [SerializeField]
+        private int _number;
+
         #region Properties
 
         /// <summary>
-        /// Device number
+        /// CUDA device number
         /// </summary>
-        public int number { get; }
+        public int number
+        {
+            get
+            {
+                return _number;
+            }
+        }
 
         /// <summary>
         /// Device name
@@ -35,7 +49,7 @@
         /// <param name="a_isPreferred">Is this device preferred by VRWorks Audio for processing?</param>
         internal CUDADevice(int a_number, string a_name, bool a_isPreferred)
         {
-            number      = a_number;
+            _number     = a_number;
             name        = a_name;
             isPreferred = a_isPreferred;
         }
